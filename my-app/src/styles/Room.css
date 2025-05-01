@@ -1,0 +1,68 @@
+.room-container {
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  color: #343a40;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark .room-container {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.room-header h2 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.room-id {
+  color: #4a90e2;
+}
+
+html.dark .room-id {
+  color: #90caf9;
+}
+
+.create-room-button {
+  background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.create-room-button:hover {
+  background-color: #357abd;
+}
+
+html.dark .create-room-button {
+  background-color: #2196f3;
+}
+
+html.dark .create-room-button:hover {
+  background-color: #1e88e5;
+}
+
+.editor-container {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+toast.success('New Classroom Created!', {
+  style: {
+    borderRadius: '10px',
+    background: '#333',
+    color: '#fff',
+  },
+});

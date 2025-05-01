@@ -1,0 +1,75 @@
+.interview-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 24px;
+  border-radius: 16px;
+  background-color: #f4f4f4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.interview-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group select,
+.form-group input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.invite-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.invite-link {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed #666;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 8px;
+  background-color: #eaeaea;
+  font-size: 14px;
+}
+
+.start-btn {
+  width: 100%;
+  margin-top: 20px;
+  background-color: #0066ff;
+  color: white;
+  border: none;
+  padding: 14px;
+  font-weight: bold;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
