@@ -9,7 +9,16 @@ import Dashboard from "./pages/Dashboard";
 import MockInterviewSetup from "./components/MockInterviewSetup";
 import './styles/global.css';
 import Navbar from "./pages/Navbar";
+import ProblemLibrary from "./pages/ProblemLibrary";
+import AdminPanel from "./admin/AdminPanel";
+import ProfilePage from "./pages/ProfilePage";
+import Room from "./pages/Room";
 import { Toaster } from 'react-hot-toast';
+ import InterviewTypes from "./interview/InterviewTypes";
+
+ import CommunicationPanel from "./communicate/CommunicationPanel"
+
+ import PerformanceDashboard from "./pages/PerformanceDashboard"
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -56,29 +65,35 @@ if (localStorage.getItem("darkMode") === "true") {
         <Route path="/auth" element={<SignUp onSignUpSuccess={handleSignUpSuccess} />} />
 
         {/* Login Page */}
-        <Route path="/login" element={<Login onSignInSuccess={handleSignInSuccess} />} />
+       <Route path="/login" element={<Login onLoginSuccess={(token) => setToken(token)} />} />
 
         {/* OAuth2 Success Callback */}
         <Route path="/oauth2-success" element={<OAuth2Success onSignInSuccess={handleSignInSuccess} onSignUpSuccess={handleSignUpSuccess} />} />
 
         {/* Protected Room Page */}
         <Route
-          path="/room"
+          path="/roompage"
           element={
             <ProtectedRoute>
               <RoomPage token={token} />
             </ProtectedRoute>
           }
         />
-
-        {/* Alternative Room Route without protection (for testing) */}
+      <Route path="/room" element={<Room  />} />
+//         {/* Alternative Room Route without protection (for testing) */}
         {/* <Route path="/room" element={<RoomPage token={token} />} /> */}
+ <Route path="/profile" element={<ProfilePage  />} />
+  <Route path="/admin" element={<AdminPanel  />} />
+   <Route path="/problems" element={<ProblemLibrary  />} />
 
+   <Route path="/PerformanceDashboard" element={<PerformanceDashboard  />} />
+    <Route path="/communication" element={<CommunicationPanel  />} />
         {/* Dashboard Page */}
         <Route path="/dashboard" element={<Dashboard onSignInSuccess={handleSignInSuccess} />} />
 
         {/* Mock Interview Setup Page */}
-        <Route path="/mockInterview" element={<MockInterviewSetup />} />
+
+        <Route path="/mockInterview" element={ <ProtectedRoute> <MockInterviewSetup />   </ProtectedRoute>} />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />

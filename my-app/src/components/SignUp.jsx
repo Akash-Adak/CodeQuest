@@ -12,7 +12,7 @@ const SignUp = ({ onSignUpSuccess }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    fetch('http://localhost:8080/auth/signup', {
+    fetch('http://localhost:8080/public/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -21,8 +21,8 @@ const SignUp = ({ onSignUpSuccess }) => {
         setLoading(false);
         if (res.ok) {
           const data = await res.json();
-          onSignUpSuccess(data.token);
-          navigate('/room');
+//           onSignUpSuccess(data.token);
+          navigate('/login');
         } else {
           const text = await res.text();
           setError(text || 'Sign up failed');

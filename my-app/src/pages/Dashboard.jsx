@@ -20,7 +20,7 @@ const Dashboard = ({ userName = "User" }) => {
           <p>Collaborate with peers or interviewers in live coding sessions.</p>
         </Link>
 
-        <Link to="/mockInterview" className="dashboard-card">
+        <Link to="/interviewtype" className="dashboard-card">
           <h2>Start Mock Interview</h2>
           <p>Practice with timed coding tasks and mock interviews.</p>
         </Link>

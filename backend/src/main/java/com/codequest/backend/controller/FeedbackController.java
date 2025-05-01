@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.codequest.backend.model.Feedback;
+import com.codequest.backend.entity.Feedback;
 import com.codequest.backend.repository.FeedbackRepository;
 
 @RestController

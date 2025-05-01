@@ -1,40 +1,46 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Login = ({onLoginSuccess}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+   const handleLogin = (e) => {
+      e.preventDefault();
+      setError('');
+      setLoading(true);
 
-    // Replace this with the actual login endpoint URL and request body as needed
-    fetch('http://localhost:8080/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: email, password }),
-    })
-      .then(async (res) => {
-        setLoading(false);
-        if (res.ok) {
-          const data = await res.json();
-          // You can save the token or other user data here, e.g., localStorage.setItem('token', data.token);
-          navigate('/room'); // Redirect to the "room" page on successful login
-        } else {
-          const text = await res.text();
-          setError(text || 'Log in failed');
-        }
+      fetch('http://localhost:8080/public/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password }),
       })
-      .catch(() => {
-        setLoading(false);
-        setError('Log in failed');
-      });
-  };
+        .then(async (res) => {
+          setLoading(false);
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('token', data.token);
+
+            // 👇 Notify parent component (and thus update Navbar)
+               console.log("before" + data.token);
+            if (onLoginSuccess) {
+              onLoginSuccess(data.token);
+            }
+             console.log( "after"+data.token);
+            navigate('/dashboard');
+          } else {
+            const text = await res.text();
+            setError(text || 'Log in failed');
+          }
+        })
+        .catch(() => {
+          setLoading(false);
+          setError('Log in failed');
+        });
+    };
 
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:8080/oauth2/authorization/google';
@@ -65,18 +71,20 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <Link to="/dashboard" >
-          <button type="submit" className="auth-button" disabled={loading}>
+
+          <button type="submit" className="auth-button"  disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
+
+
           </button>
-          </Link>
+
         </form>
 
         <div className="auth-divider">OR</div>
 
         <button onClick={handleGoogleLogin} className="auth-google-button">
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
             alt="Google Logo"
             className="auth-google-logo"
           />

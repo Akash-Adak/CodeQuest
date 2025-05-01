@@ -1,29 +1,27 @@
-  package com.codequest.backend.controller;
+package com.codequest.backend.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.codequest.backend.service.CodeExecutionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/execute")
 public class CodeExecutionController {
 
+    @Autowired
+    private CodeExecutionService codeExecutionService;
+
     @PostMapping
-    public ResponseEntity<Map<String, String>> executeCode(@RequestBody Map<String, String> payload) {
+    public Mono<ResponseEntity<Map<String, String>>> executeCode(@RequestBody Map<String, String> payload) {
         String code = payload.get("code");
-        String language = payload.get("language");
+        String languageId = payload.get("languageId"); // Judge0 uses numeric IDs
 
-        // For MVP, simulate code execution by returning a dummy output
-        String output = "Executed code in language: " + language + "\\nOutput: Hello World!";
-
-        Map<String, String> response = new HashMap<>();
-        response.put("output", output);
-
-        return ResponseEntity.ok(response);
+        return codeExecutionService.executeCode(code, languageId)
+                .map(output -> ResponseEntity.ok(Map.of("output", output)))
+                .onErrorResume(e -> Mono.just(ResponseEntity.badRequest().body(Map.of("error", e.getMessage()))));
     }
 }

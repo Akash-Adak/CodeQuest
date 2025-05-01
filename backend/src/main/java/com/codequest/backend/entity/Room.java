@@ -1,4 +1,4 @@
-package com.codequest.backend.model;
+package com.codequest.backend.entity;
 
 import java.util.HashSet;
 import java.util.Set;

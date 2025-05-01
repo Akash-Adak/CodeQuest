@@ -12,11 +12,13 @@ function Navbar({ token, onLogout }) {
   const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
   const [searchFocused, setSearchFocused] = useState(false);
   const dropdownRef = useRef(null);
+//   const [token, setToken] = useState(localStorage.getItem("token"));
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     onLogout();
-    navigate("/login");
+    navigate("/landing");
   };
 
   const toggleDropdown = () => {
@@ -91,10 +93,10 @@ function Navbar({ token, onLogout }) {
               <FaUser className="inline-icon" /> Profile ▼
             </button>
             <div className={`dropdown-menu ${showDropdown ? "show" : ""}`}>
-              <Link to="/profile" className="dropdown-item">
+              <Link to="/dashboard" className="dropdown-item">
                 <FaUser className="inline-icon" /> View Profile
               </Link>
-              <Link to="/settings" className="dropdown-item">
+              <Link to="/profile" className="dropdown-item">
                 <FaCog className="inline-icon" /> Settings
               </Link>
               <button onClick={handleLogout} className="dropdown-item logout">

@@ -1,4 +1,4 @@
-package com.codequest.backend.model;
+package com.codequest.backend.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

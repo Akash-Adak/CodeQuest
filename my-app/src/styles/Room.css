@@ -1,68 +1,99 @@
-.room-container {
-  padding: 2rem;
-  min-height: 100vh;
-  background-color: #f8f9fa;
-  color: #343a40;
-  transition: background-color 0.3s ease, color 0.3s ease;
+/* Base Styles */
+.join-room {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 30px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-html.dark .room-container {
+.dark-mode .join-room {
   background-color: #121212;
   color: #e0e0e0;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
-.room-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+.join-room h2 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
 }
 
-.room-header h2 {
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.room-id {
-  color: #4a90e2;
-}
-
-html.dark .room-id {
-  color: #90caf9;
-}
-
-.create-room-button {
-  background-color: #4a90e2;
-  color: #fff;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
+.input {
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #ccc;
   border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  color: #333;
+  transition: border-color 0.3s ease-in-out;
+}
+
+.dark-mode .input {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+/* Buttons */
+.btn {
+  padding: 12px 20px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s;
 }
 
-.create-room-button:hover {
-  background-color: #357abd;
+.join-btn {
+  background-color: #4caf50;
+  color: white;
 }
 
-html.dark .create-room-button {
-  background-color: #2196f3;
+.btn-share {
+  background-color: #03a9f4;
+  color: white;
 }
 
-html.dark .create-room-button:hover {
-  background-color: #1e88e5;
+.btn:hover {
+  opacity: 0.9;
 }
 
-.editor-container {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+/* Divider */
+hr {
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 20px 0;
 }
-toast.success('New Classroom Created!', {
-  style: {
-    borderRadius: '10px',
-    background: '#333',
-    color: '#fff',
-  },
-});
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .join-room {
+    padding: 20px;
+    margin: 50px auto;
+  }
+
+  .join-room h2 {
+    font-size: 1.25rem;
+  }
+
+  .input {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+}

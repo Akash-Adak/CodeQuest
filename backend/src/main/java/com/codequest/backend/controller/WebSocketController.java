@@ -9,7 +9,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
-import com.codequest.backend.model.CodeSubmission;
+import com.codequest.backend.entity.CodeSubmission;
 import com.codequest.backend.repository.CodeSubmissionRepository;
 import com.codequest.backend.repository.RoomRepository;
 

@@ -1,6 +1,7 @@
 package com.codequest.backend.service;
 
-import com.codequest.backend.model.User;
+//import com.codequest.backend.model.User;
+import com.codequest.backend.entity.User;
 import com.codequest.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

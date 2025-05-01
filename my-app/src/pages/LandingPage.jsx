@@ -32,12 +32,14 @@ const LandingPage = () => {
               Simulate real-world interviews with timed tasks and predefined questions.
             </p>
           </div>
+          <Link to="/mockInterview" >
           <div className="feature-item">
             <h3 className="feature-title">Collaborative Coding</h3>
             <p className="feature-description">
               Work with others in virtual rooms on coding challenges, ideal for pair programming.
             </p>
           </div>
+          </Link>
           <div className="feature-item">
             <h3 className="feature-title">Performance Tracking</h3>
             <p className="feature-description">

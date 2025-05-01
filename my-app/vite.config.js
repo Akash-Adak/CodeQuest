@@ -6,4 +6,15 @@ export default defineConfig({
   define: {
     global: 'globalThis',  // Use globalThis to polyfill 'global'
   },
+   server: {
+      watch: {
+           usePolling: true,
+           interval: 100,
+         },
+      port: 5173,
+      open: true,
+    },
 });
+
+
+

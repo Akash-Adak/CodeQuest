@@ -1,0 +1,83 @@
+/* src/styles/CommunicationPanel.css */
+
+.communication-panel {
+  padding: 1rem;
+  background: var(--background);
+  border-left: 2px solid #ccc;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h3 {
+  margin: 1rem 0 0.5rem;
+  color: var(--text-color);
+}
+
+.chat-box {
+  flex: 1;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #f1f5f9;
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-message {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+}
+
+.chat-input button {
+  padding: 0.5rem 1rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  resize: vertical;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actions button {
+  padding: 0.5rem;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.actions button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+:root {
+  --background: #ffffff;
+  --text-color: #1f2937;
+}
+
+body.dark-mode {
+  --background: #0f172a;
+  --text-color: #f8fafc;
+}

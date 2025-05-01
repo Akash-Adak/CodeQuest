@@ -1,6 +1,7 @@
 package com.codequest.backend.controller;
 
-import com.codequest.backend.model.User;
+//import com.codequest.backend.model.User;
+import com.codequest.backend.entity.User;
 import com.codequest.backend.repository.UserRepository;
 //import com.codequest.backend.util.JwtUtil;
 import com.codequest.backend.util.JwtUtil;
@@ -14,8 +15,8 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/auth")
-public class AuthController {
+@RequestMapping("/public")
+public class PublicController {
 
     @Autowired
     private UserRepository userRepository;

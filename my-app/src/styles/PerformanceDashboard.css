@@ -1,0 +1,80 @@
+/* src/styles/PerformanceDashboard.css */
+
+.performance-dashboard {
+  padding: 2rem;
+  background: var(--background);
+  color: var(--text-color);
+  min-height: 100vh; /* Ensure the content area takes full height */
+  overflow-y: auto; /* Allow scrolling if content overflows vertically */
+}
+
+.metrics {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.metric-box {
+  flex: 1;
+  background: #e0e7ff;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.metric-box h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1e3a8a;
+}
+
+.metric-box p {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1e40af;
+}
+
+.chart-section,
+.heatmap-section {
+  margin-top: 2rem;
+}
+
+.react-calendar-heatmap text {
+  fill: var(--text-color);
+}
+
+.color-empty {
+  fill: #f1f5f9;
+}
+.color-scale-1 {
+  fill: #c7d2fe;
+}
+.color-scale-2 {
+  fill: #818cf8;
+}
+.color-scale-3 {
+  fill: #4f46e5;
+}
+
+:root {
+  --background: #ffffff;
+  --text-color: #1f2937;
+}
+
+body.dark-mode {
+  --background: #0f172a;
+  --text-color: #f8fafc;
+}
+
+/* Additional Styles for Scrolling */
+html, body {
+  height: 100%; /* Make sure the HTML and body take full height */
+  margin: 0; /* Remove default margin */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+.performance-dashboard {
+  max-width: 1200px; /* Optional, to limit the width */
+  margin: 0 auto; /* Center content horizontally */
+}

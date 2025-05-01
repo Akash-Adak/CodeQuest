@@ -1,6 +1,6 @@
 package com.codequest.backend.service;
 
-import com.codequest.backend.model.Room;
+import com.codequest.backend.entity.Room;
 import com.codequest.backend.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
