@@ -10,7 +10,6 @@ const RoomPage = () => {
   const [connected, setConnected] = useState(false);
   const [language, setLanguage] = useState('javascript');
   const [timer, setTimer] = useState(0);
-   const location = useLocation();
   const [timerActive, setTimerActive] = useState(false);
   const [problem, setProblem] = useState('');
   const [sharedProblem, setSharedProblem] = useState('');
@@ -24,33 +23,25 @@ const RoomPage = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isRoomCreator, setIsRoomCreator] = useState(true); // placeholder
+  const location = useLocation();
   const [username, setUsername] = useState(location?.state?.username || 'Admin');
+
+  // Get roomId from navigation state
+  const roomIdFromState = location?.state?.roomId || '';
+
   useEffect(() => {
-//        setUsers([username, "Admin"]);
+    if (roomIdFromState) {
+      setRoomId("http://localhost:5173/roompage/"+roomIdFromState);
+    }
+  }, [roomIdFromState]);
+
+  useEffect(() => {
     if (connected && roomId && WebSocketService.stompClient && WebSocketService.stompClient.connected) {
-      WebSocketService.connect(roomId, null, (message) => {
-        setCode(message);
-        codeRef.current = message;
-      });
-
-      WebSocketService.stompClient.subscribe(`/topic/room/${roomId}/problem`, (message) => {
-        const parsed = JSON.parse(message.body);
-        if (parsed.problem) {
-          setSharedProblem(parsed.problem);
-        }
-      });
-
-      WebSocketService.stompClient.subscribe(`/topic/room/${roomId}/timer`, (message) => {
-        const parsed = JSON.parse(message.body);
-        if (parsed.timer !== undefined) {
-          setTimer(parsed.timer);
-          setTimerActive(parsed.active);
-        }
-      });
-
-      WebSocketService.stompClient.subscribe(`/topic/room/${roomId}/chat`, (message) => {
-        const parsed = JSON.parse(message.body);
-        setChatMessages(prev => [...prev, parsed]);
+      WebSocketService.connect(roomId, null, (codeMessage) => {
+        setCode(codeMessage);
+        codeRef.current = codeMessage;
+      }, (chatMessage) => {
+        setChatMessages(prev => [...prev, chatMessage]);
       });
 
       WebSocketService.sendMessage(JSON.stringify({ roomId, participant, type: 'join' }));
@@ -77,9 +68,7 @@ const RoomPage = () => {
       setProgress(100);
       setCritical(false);
 
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      if (intervalId) clearInterval(intervalId);
 
       const id = setInterval(() => {
         setTimer(prevTimer => {
@@ -156,75 +145,71 @@ const RoomPage = () => {
 
   return (
     <div className={`page-container ${darkMode ? 'dark-mode' : ''}`}>
-        <h2>{username}</h2>
+      <h2>{username}</h2>
 
-        <div className="room-content">
-          <div className="room-body">
-            <div className="left-section">
-              <div className="timer-container">
-                <div className={`timer-circle small ${critical ? 'critical' : ''}`} onClick={handleCircleClick}>
-                  <div className="timer-display">{formatTime(timer)}</div>
-                </div>
+      {/* Room ID Display & Copy */}
+      <div className="room-info">
+        <p><strong>Room ID:</strong> {roomId}</p>
+        <button
+          className="btn btn-copy"
+          onClick={() => {
+            navigator.clipboard.writeText(roomId);
+            alert('Room ID copied to clipboard!');
+          }}
+        >
+          Copy Room ID
+        </button>
+      </div>
+
+      <div className="room-content">
+        <div className="room-body">
+          <div className="left-section">
+            <div className="timer-container">
+              <div className={`timer-circle small ${critical ? 'critical' : ''}`} onClick={handleCircleClick}>
+                <div className="timer-display">{formatTime(timer)}</div>
               </div>
-
-              <div className="problem-container">
-                <h3>Problem Statement</h3>
-                {isRoomCreator ? (
-                  <>
-                    <textarea
-                      rows="6"
-                      value={problem}
-                      onChange={(e) => setProblem(e.target.value)}
-                      placeholder="Enter problem statement..."
-                      className="input"
-                    />
-                    <button onClick={handleShareProblem} className="btn btn-share">Share Problem</button>
-                  </>
-                ) : null}
-                {sharedProblem && (
-                  <div className="shared-problem">
-                    <strong>Problem:</strong>
-                    <pre>{sharedProblem}</pre>
-                  </div>
-                )}
-              </div>
-
-{/*               <div className="chat-container"> */}
-{/*                 <h3>Chat</h3> */}
-{/*                 <div className="chat-box"> */}
-{/*                   {chatMessages.map((msg, index) => ( */}
-{/*                     <div key={index}><strong>{msg.participant}:</strong> {msg.message}</div> */}
-{/*                   ))} */}
-{/*                 </div> */}
-{/*                 <input */}
-{/*                   type="text" */}
-{/*                   value={chatInput} */}
-{/*                   onChange={(e) => setChatInput(e.target.value)} */}
-{/*                   className="input" */}
-{/*                   placeholder="Type a message..." */}
-{/*                 /> */}
-{/*                 <button onClick={handleSendChat} className="btn btn-chat">Send</button> */}
-{/*               </div> */}
             </div>
 
-            <div className="right-section">
-              <div className="editor-container">
-                <h3>Code Editor</h3>
-                <CodeEditor code={code} onCodeChange={handleCodeChange} language={language} />
-                <div className="actions">
-                  <button onClick={handleRunCode} className="btn btn-run">Run Code</button>
-                  <button onClick={handleSubmitCode} className="btn btn-submit">Submit Code</button>
-                  <button onClick={handleRunTestCases} className="btn btn-testcases">Run Test Cases</button>
+            <div className="problem-container">
+              <h3>Problem Statement</h3>
+              {isRoomCreator ? (
+                <>
+                  <textarea
+                    rows="6"
+                    value={problem}
+                    onChange={(e) => setProblem(e.target.value)}
+                    placeholder="Enter problem statement..."
+                    className="input"
+                  />
+                  <button onClick={handleShareProblem} className="btn btn-share">Share Problem</button>
+                </>
+              ) : null}
+              {sharedProblem && (
+                <div className="shared-problem">
+                  <strong>Problem:</strong>
+                  <pre>{sharedProblem}</pre>
                 </div>
-                <div className="output-box">
-                  <h4>Output:</h4>
-                  <pre>{output}</pre>
-                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="right-section">
+            <div className="editor-container">
+              <h3>Code Editor</h3>
+              <CodeEditor code={code} onCodeChange={handleCodeChange} language={language} />
+              <div className="actions">
+                <button onClick={handleRunCode} className="btn btn-run">Run Code</button>
+                <button onClick={handleSubmitCode} className="btn btn-submit">Submit Code</button>
+                <button onClick={handleRunTestCases} className="btn btn-testcases">Run Test Cases</button>
+              </div>
+              <div className="output-box">
+                <h4>Output:</h4>
+                <pre>{output}</pre>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

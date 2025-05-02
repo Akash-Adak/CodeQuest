@@ -4,17 +4,15 @@ import '../styles/LandingPage.css';
 
 
 const LandingPage = () => {
-  const [darkMode, setDarkMode] = useState(false);
-
+//   const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
 
   return (
     <div className={`page-container ${darkMode ? 'dark-mode' : ''}`}>
       <header className="header">
         <h1 className="title">Welcome to CodeQuest</h1>
         <p className="subtitle">Your platform for collaborative coding interviews and mock sessions</p>
-        <div className="cta-container">
-          <Link to="/login" className="cta-button">Get Started</Link>
-        </div>
+
       </header>
 
       <section className="features-section">

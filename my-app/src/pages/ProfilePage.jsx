@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import "../styles/ProfilePage.css"; // Custom CSS file for styling
+import "../styles/ProfilePage.css";
 
 const ProfilePage = () => {
   const [user, setUser] = useState({
@@ -13,29 +13,50 @@ const ProfilePage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
 
-  // Fetching user data (simulating data from localStorage)
+  // Fetch user data from backend
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user")) || {
-      name: "John Doe",
-      email: "johndoe@example.com",
-      username: "john_doe123",
+    const fetchUserData = async () => {
+      const token = localStorage.getItem("token");
+
+      try {
+        const res = await fetch("http://localhost:8080/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+
+        const data = await res.json();
+        setUser({
+          name: data.name || "",
+          email: data.email || "",
+          username: data.username || data.email || "",
+        });
+      } catch (err) {
+        toast.error("Unable to fetch profile data.");
+        console.error(err);
+      }
     };
-    setUser(userData);
+
+    fetchUserData();
   }, []);
 
-  // Handle saving changes
+  // Save changes (mocked: extend this for actual backend update)
   const handleSave = () => {
     if (newPassword && newPassword !== confirmPassword) {
       toast.error("Passwords do not match.");
       return;
     }
-    // Save profile changes
-    localStorage.setItem("user", JSON.stringify(user));
+
+    // You would normally call your backend here to update user info
     toast.success("Profile updated successfully.");
     setEditing(false);
   };
 
-  // Handle theme toggle
+  // Toggle theme
   const handleThemeToggle = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
@@ -98,7 +119,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Change Password */}
+      {/* Password Change */}
       {editing && (
         <div className="password-change">
           <h3>Change Password</h3>

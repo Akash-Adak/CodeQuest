@@ -14,15 +14,17 @@ const Room = () => {
       toast.error("Please enter both Room ID and your name.");
       return;
     }
-    navigate(`/room/${roomId}`, { state: { username } });
+
+    navigate(`/roompage/${roomId}`, { state: { roomId,username } });
     toast.success("Joined Room!");
   };
 
   const handleCreateRoom = () => {
 
     const newRoomId = Math.random().toString(36).substring(2, 10);
-    let name=localsto
-    navigate(`/roompage`, { state: { username: "Admin" } });
+   const name = localStorage.getItem('name');
+   console.log(localStorage);
+    navigate(`/roompage/${newRoomId}`, { state: { roomId: newRoomId,username: name } });
     toast.success("New Room Created!");
   };
 

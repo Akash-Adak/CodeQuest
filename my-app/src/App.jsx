@@ -15,13 +15,14 @@ import ProfilePage from "./pages/ProfilePage";
 import Room from "./pages/Room";
 import { Toaster } from 'react-hot-toast';
  import InterviewTypes from "./interview/InterviewTypes";
-
+import { useParams } from 'react-router-dom';
  import CommunicationPanel from "./communicate/CommunicationPanel"
 
  import PerformanceDashboard from "./pages/PerformanceDashboard"
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const { roomId } = useParams();
 // index.js or App.jsx
 if (localStorage.getItem("darkMode") === "true") {
   document.documentElement.classList.add("dark");
@@ -71,14 +72,15 @@ if (localStorage.getItem("darkMode") === "true") {
         <Route path="/oauth2-success" element={<OAuth2Success onSignInSuccess={handleSignInSuccess} onSignUpSuccess={handleSignUpSuccess} />} />
 
         {/* Protected Room Page */}
-        <Route
-          path="/roompage"
-          element={
-            <ProtectedRoute>
-              <RoomPage token={token} />
-            </ProtectedRoute>
-          }
-        />
+    <Route
+      path="/roompage/:roomId"
+      element={
+        <ProtectedRoute>
+          <RoomPage token={token} />
+        </ProtectedRoute>
+      }
+    />
+
       <Route path="/room" element={<Room  />} />
 //         {/* Alternative Room Route without protection (for testing) */}
         {/* <Route path="/room" element={<RoomPage token={token} />} /> */}

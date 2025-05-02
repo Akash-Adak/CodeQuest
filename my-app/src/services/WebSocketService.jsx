@@ -23,6 +23,7 @@ class WebSocketService {
       onConnect: () => {
         console.log("Connected to WebSocket");
 
+        // Subscribe to code updates for this room
         this.stompClient.subscribe(`/topic/room/${this.roomId}`, (message) => {
           try {
             const parsedBody = JSON.parse(message.body);
@@ -31,9 +32,9 @@ class WebSocketService {
             console.error("Failed to parse WebSocket message", error);
             codeCallback(message.body);
           }
-          console.log("Received message: ", message.body);
         });
 
+        // Subscribe to chat messages for this room
         this.stompClient.subscribe(`/topic/room/${this.roomId}/chat`, (message) => {
           try {
             const parsedBody = JSON.parse(message.body);

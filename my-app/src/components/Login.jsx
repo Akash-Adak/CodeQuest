@@ -1,46 +1,50 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Login = ({onLoginSuccess}) => {
+const Login = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-   const handleLogin = (e) => {
-      e.preventDefault();
-      setError('');
-      setLoading(true);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-      fetch('http://localhost:8080/public/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: email, password }),
-      })
-        .then(async (res) => {
-          setLoading(false);
-          if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem('token', data.token);
+    fetch('http://localhost:8080/public/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: email, password }),
+    })
+      .then(async (res) => {
+        setLoading(false);
+        if (res.ok) {
+          const data = await res.json();
 
-            // 👇 Notify parent component (and thus update Navbar)
-               console.log("before" + data.token);
-            if (onLoginSuccess) {
-              onLoginSuccess(data.token);
-            }
-             console.log( "after"+data.token);
-            navigate('/dashboard');
-          } else {
-            const text = await res.text();
-            setError(text || 'Log in failed');
+          // ✅ Save token and name (email) to localStorage
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('name', email); // ✅ FIXED
+
+          console.log('Logged in as:', email);
+          console.log(localStorage);
+
+          if (onLoginSuccess) {
+            onLoginSuccess(data.token);
           }
-        })
-        .catch(() => {
-          setLoading(false);
-          setError('Log in failed');
-        });
-    };
+
+          navigate('/dashboard');
+        } else {
+          const text = await res.text();
+          setError(text || 'Log in failed');
+        }
+      })
+      .catch(() => {
+        setLoading(false);
+        setError('Log in failed');
+      });
+  };
 
   const handleGoogleLogin = () => {
     window.location.href = 'http://localhost:8080/oauth2/authorization/google';
@@ -57,7 +61,7 @@ const Login = ({onLoginSuccess}) => {
         <form onSubmit={handleLogin} className="auth-form">
           <input
             type="text"
-            placeholder="username"
+            placeholder="Username"
             className="auth-input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -72,12 +76,9 @@ const Login = ({onLoginSuccess}) => {
             required
           />
 
-          <button type="submit" className="auth-button"  disabled={loading}>
+          <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
-
-
           </button>
-
         </form>
 
         <div className="auth-divider">OR</div>
