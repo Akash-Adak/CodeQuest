@@ -1,16 +1,29 @@
 package com.codequest.backend.entity;
 
+//import com.codequest.model.Role;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Set;
 
 @Document(collection = "users")
 public class User {
     @Id
     private String id;
     private String username;
-    private String password; // hashed password
+    private String password;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
     private String role;
 
+    private String email;
+
+    private String oauth2Provider;
     public User() {}
 
     public User(String username, String password, String role) {

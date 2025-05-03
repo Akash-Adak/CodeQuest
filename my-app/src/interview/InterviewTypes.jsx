@@ -9,7 +9,7 @@ const InterviewTypes = () => {
       title: "Mock Interviews",
       description: "Simulated interviews with AI or mentor. Auto-evaluated and timed sessions.",
       action: "Start Mock Interview",
-      route: "/mock-interview",
+      route: "/InterviewDashboard",
     },
     {
       title: "Peer Interviews",

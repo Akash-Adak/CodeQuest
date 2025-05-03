@@ -4,17 +4,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaSun, FaMoon, FaUser, FaCog, FaSignOutAlt, FaSearch } from "react-icons/fa";
 import "../styles/Navbar.css";
+import { useTheme } from "../context/ThemeContext";
 
 function Navbar({ token, onLogout }) {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
+//   const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
   const [searchFocused, setSearchFocused] = useState(false);
   const dropdownRef = useRef(null);
 //   const [token, setToken] = useState(localStorage.getItem("token"));
 
-
+  const { darkMode, setDarkMode } = useTheme();
   const handleLogout = () => {
     localStorage.removeItem("token");
     onLogout();
@@ -29,16 +30,7 @@ function Navbar({ token, onLogout }) {
     setMenuOpen(!menuOpen);
   };
 
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.setItem("darkMode", newMode);
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+
 
 
 
@@ -83,9 +75,9 @@ function Navbar({ token, onLogout }) {
 
       <div className={`navbar-buttons ${menuOpen ? "active" : ""}`}>
         {/* Sun/Moon Toggle */}
-        <button onClick={toggleDarkMode} className="btn btn-darkmode">
-          {darkMode ? <FaSun className="sun" /> : <FaMoon className="moon" />}
-        </button>
+      <button onClick={() => setDarkMode((prev) => !prev)}>
+            {darkMode ? "☀️" : "🌙"}
+          </button>
 
         {token ? (
           <div className="profile-dropdown" ref={dropdownRef}>

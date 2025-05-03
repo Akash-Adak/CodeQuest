@@ -1,91 +1,91 @@
-import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
-class WebSocketService {
-  constructor() {
-    this.stompClient = null;
-    this.roomId = null;
-    this.token = null;
-  }
+const WebSocketService = {
+  stompClient: null,
+  roomId: '',
+  participant: '',
+  onMessage: null,
 
-  connect(roomId, token, codeCallback, chatCallback) {
+  connect(roomId, participant, onMessage, onDisconnect, onError) {
+    if (this.stompClient && this.stompClient.connected) {
+      console.warn('Already connected.');
+      return;
+    }
+
     this.roomId = roomId;
-    this.token = token;
+    this.participant = participant;
+    this.onMessage = onMessage;
 
-    const socket = new SockJS("http://localhost:8080/ws");
-
+    const socket = new SockJS('http://localhost:8080/ws');
     this.stompClient = new Client({
       webSocketFactory: () => socket,
-      connectHeaders: this.token ? { Authorization: 'Bearer ' + this.token } : {},
-      debug: function (str) {
-        console.log(str);
-      },
+      reconnectDelay: 5000,
       onConnect: () => {
-        console.log("Connected to WebSocket");
+        console.log('[WebSocket] Connected to room:', roomId);
 
-        // Subscribe to code updates for this room
-        this.stompClient.subscribe(`/topic/room/${this.roomId}`, (message) => {
-          try {
-            const parsedBody = JSON.parse(message.body);
-            codeCallback(parsedBody.content);
-          } catch (error) {
-            console.error("Failed to parse WebSocket message", error);
-            codeCallback(message.body);
+        this.stompClient.subscribe(`/topic/code/${roomId}`, (message) => {
+          const payload = JSON.parse(message.body);
+          if (payload && payload.code) {
+            this.onMessage(payload.code);
           }
         });
 
-        // Subscribe to chat messages for this room
-        this.stompClient.subscribe(`/topic/room/${this.roomId}/chat`, (message) => {
-          try {
-            const parsedBody = JSON.parse(message.body);
-            chatCallback(parsedBody);
-          } catch (error) {
-            console.error("Failed to parse chat message", error);
-          }
-        });
-
-        console.log(`Subscribed to /topic/room/${this.roomId} and chat`);
+        // Notify room of join
+        this.sendMessage(JSON.stringify({ type: 'join', participant }), `/app/code/${roomId}/join`);
       },
       onStompError: (frame) => {
-        console.error("STOMP error: ", frame);
+        console.error('[WebSocket] STOMP error:', frame);
+        if (onError) onError();
+      },
+      onWebSocketClose: () => {
+        console.log('[WebSocket] Closed');
+        if (onDisconnect) onDisconnect();
       },
     });
 
     this.stompClient.activate();
-  }
+  },
 
-  sendCodeMessage(message) {
+  sendCodeMessage(code) {
     if (this.stompClient && this.stompClient.connected) {
+      const message = {
+        type: 'code',
+        code,
+        participant: this.participant,
+      };
       this.stompClient.publish({
         destination: `/app/code/${this.roomId}`,
-        body: JSON.stringify({ roomId: this.roomId, content: message }),
+        body: JSON.stringify(message),
       });
+    } else {
+      console.warn('[WebSocket] Not connected. Cannot send code.');
     }
-  }
-
-  sendChatMessage(participant, message) {
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.publish({
-        destination: `/app/room/${this.roomId}/chat`,
-        body: JSON.stringify({ roomId: this.roomId, participant, message }),
-      });
-    }
-  }
+  },
 
   sendMessage(message, destination = `/app/code/${this.roomId}`) {
     if (this.stompClient && this.stompClient.connected) {
       this.stompClient.publish({
-        destination: destination,
-        body: typeof message === 'string' ? message : JSON.stringify(message),
+        destination,
+        body: message,
       });
+    } else {
+      console.warn('[WebSocket] Not connected. Cannot send message.');
     }
-  }
+  },
 
   disconnect() {
-    if (this.stompClient !== null) {
+    if (this.stompClient && this.stompClient.connected) {
+      console.log('[WebSocket] Disconnecting...');
+      this.sendMessage(
+        JSON.stringify({ type: 'leave', participant: this.participant }),
+        `/app/code/${this.roomId}/leave`
+      );
       this.stompClient.deactivate();
+    } else {
+      console.log('[WebSocket] Stomp client not connected. Skip disconnect.');
     }
-  }
-}
+  },
+};
 
-export default new WebSocketService();
+export default WebSocketService;

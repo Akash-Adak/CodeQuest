@@ -1,0 +1,290 @@
+/* Reset default styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+
+  background-color: #f9f9f9;
+  transition: background-color 0.3s ease;
+}
+
+.editor-container.dark {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.header {
+
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid #ddd;
+}
+
+.header-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.timer {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.timer:hover {
+  background-color: #ccc;
+}
+
+.dark .timer {
+  background-color: #2c2c2c;
+  color: #fff;
+}
+
+select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+  background-color: white;
+}
+
+.dark select {
+  background-color: #2c2c2c;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.main-area {
+  display: flex;
+  flex: 1;
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.editor-left,
+.editor-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+}
+
+.dark .editor-left,
+.dark .editor-right {
+  background-color: #2a2a2a;
+}
+
+.run-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.run-btn:hover {
+  background-color: #0056b3;
+}
+
+.output-box {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  height: 100%;
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+.dark .output-box {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+/* For react-split-pane */
+.split-pane {
+  height: 100%;
+}
+
+.Pane {
+  padding: 0.5rem;
+}
+
+.Resizer {
+  background: #ccc;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.dark .Resizer {
+  background: #555;
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.output-controls button {
+  margin-left: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  background-color: #eee;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.dark .output-controls button {
+  background-color: #3a3a3a;
+  color: white;
+}
+
+.output-controls button:hover {
+  background-color: #ccc;
+}
+
+.dark .output-controls button:hover {
+  background-color: #555;
+}
+/* CodeEditor.css */
+
+.editor-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+
+  background-color: var(--header-bg, #f4f4f4);
+  border-bottom: 1px solid #ccc;
+}
+
+.header.dark {
+  background-color: #1e1e1e;
+  color: #f4f4f4;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+
+}
+
+.timer {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.split-pane {
+  height: 100%;
+}
+
+.editor-left {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--editor-bg, #fff);
+}
+
+.editor-right {
+  padding: 10px;
+  background-color: var(--output-bg, #f9f9f9);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.output-controls button {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border: none;
+  cursor: pointer;
+  background-color: #eee;
+  border-radius: 4px;
+}
+
+.output-box {
+  background-color: #111;
+  color: #0f0;
+  padding: 12px;
+  border-radius: 4px;
+  min-height: 200px;
+  overflow-y: auto;
+}
+
+.run-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.run-btn:hover {
+  background-color: #0056b3;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.invite-link {
+  font-size: 14px;
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.invite-link:hover {
+  text-decoration: underline;
+}
+
+.participants {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.participant-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}

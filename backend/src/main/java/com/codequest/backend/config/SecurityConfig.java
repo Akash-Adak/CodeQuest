@@ -49,6 +49,9 @@ public class SecurityConfig {
 //                        .requestMatchers("/admin/create-admin-user").permitAll()
                         .requestMatchers("/login/**", "/signup/**").authenticated()
 //                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/api/interviewer/**").hasRole("INTERVIEWER")
+                                .requestMatchers("/api/candidate/**").hasRole("CANDIDATE")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
