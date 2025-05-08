@@ -41,14 +41,27 @@ public class CodeExecutionService {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {
-                    if (response.containsKey("stdout")) {
+                    // Debugging: log the full response to inspect
+                    System.out.println("API Response: " + response);
+
+                    // Check for stdout (successful execution output)
+                    if (response.containsKey("stdout") && response.get("stdout") != null) {
                         return (String) response.get("stdout");
-                    } else if (response.containsKey("compile_output")) {
+                    }
+
+                    // Check for compile output (compilation error)
+                    else if (response.containsKey("compile_output") && response.get("compile_output") != null) {
                         return (String) response.get("compile_output");
-                    } else if (response.containsKey("stderr")) {
+                    }
+
+                    // Check for stderr (runtime error or issues)
+                    else if (response.containsKey("stderr") && response.get("stderr") != null) {
                         return (String) response.get("stderr");
-                    } else {
-                        return "No output returned";
+                    }
+
+                    // If no output is found
+                    else {
+                        return "No output or error returned from Judge0 API.";
                     }
                 });
     }

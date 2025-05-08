@@ -1,26 +1,25 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import "../styles/Login.css";
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+
 const Login = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the original page the user intended to access
   const from = location.state?.from?.pathname || "/dashboard";
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
-    fetch('http://localhost:8080/public/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    fetch("http://localhost:8080/public/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: email, password }),
     })
       .then(async (res) => {
@@ -28,8 +27,8 @@ const Login = ({ onLoginSuccess }) => {
         if (res.ok) {
           const data = await res.json();
 
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('name', email);
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("name", email);
 
           if (onLoginSuccess) {
             onLoginSuccess(data.token);
@@ -37,34 +36,35 @@ const Login = ({ onLoginSuccess }) => {
 
           // ✅ Proper redirection after login
           navigate(from, { replace: true });
-
         } else {
           const text = await res.text();
-          setError(text || 'Log in failed');
+          setError(text || "Log in failed");
         }
       })
       .catch(() => {
         setLoading(false);
-        setError('Log in failed');
+        setError("Log in failed");
       });
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = "http://localhost:8080/auth/google/callback";
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2 className="auth-title">Login to CodeQuest</h2>
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-90 backdrop-blur-lg">
+        <h2 className="text-3xl font-semibold text-center text-gray-700 dark:text-white mb-6">
+          Login to CodeQuest
+        </h2>
 
-        {error && <div className="auth-error">{error}</div>}
+        {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
 
-        <form onSubmit={handleLogin} className="auth-form">
+        <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="text"
             placeholder="Username"
-            className="auth-input"
+            className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -72,31 +72,40 @@ const Login = ({ onLoginSuccess }) => {
           <input
             type="password"
             placeholder="Password"
-            className="auth-input"
+            className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+          <button
+            type="submit"
+            className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        <div className="auth-divider">OR</div>
+        <div className="flex items-center justify-center my-4">
+          <div className="text-gray-500 dark:text-gray-400">OR</div>
+        </div>
 
-        <button onClick={handleGoogleLogin} className="auth-google-button">
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+        >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
             alt="Google Logo"
-            className="auth-google-logo"
+            className="w-5 h-5 mr-2"
           />
           Continue with Google
         </button>
 
-        <div className="auth-footer">
-          Don't have an account?{' '}
-          <Link to="/signup" className="auth-link">
+        <div className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500">
             Sign up
           </Link>
         </div>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Editor from "@monaco-editor/react";
-import "../styles/CodeEditor.css";
 import { useTheme } from "../context/ThemeContext";
-import WebSocketService from "../services/WebSocketService"; // ⬅️ Import WebSocket service
+import WebSocketService from "../services/WebSocketService";
+import { FaPlay, FaTrash, FaCopy, FaJava } from "react-icons/fa"; // Added FaJava here
+import { SiPython, SiJavascript, SiCplusplus, SiC } from "react-icons/si";
 
 const CodeEditor = ({ roomId, participant }) => {
   const { darkMode } = useTheme();
@@ -13,38 +14,25 @@ const CodeEditor = ({ roomId, participant }) => {
   const [output, setOutput] = useState("");
   const [input, setInput] = useState("");
   const [timer, setTimer] = useState(300);
-  const [active, setActive] = useState(false);
   const [participants, setParticipants] = useState([]);
   const codeRef = useRef(code);
-const [showInvitePopup, setShowInvitePopup] = useState(false);
-
-// Toggle the popup visibility
-const toggleInvitePopup = () => setShowInvitePopup(!showInvitePopup);
-  useEffect(() => {
-    let interval;
-    if (active && timer > 0) {
-      interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [active, timer]);
 
   useEffect(() => {
-    // Connect to WebSocket room
     WebSocketService.connect(
       roomId,
       () => {
-        console.log("Connected to WebSocket room:", roomId);
-        WebSocketService.sendMessage(JSON.stringify({ type: "join", participant }), `/app/code/${roomId}`);
+        WebSocketService.sendMessage(
+          JSON.stringify({ type: "join", participant }),
+          `/app/code/${roomId}`
+        );
       },
       (message) => {
-        // Listen for incoming code updates
         if (typeof message === "string") {
           setCode(message);
           codeRef.current = message;
         }
       },
       (participants) => {
-        // Update participants list when someone joins or leaves
         setParticipants(participants);
       },
       () => {
@@ -53,7 +41,10 @@ const toggleInvitePopup = () => setShowInvitePopup(!showInvitePopup);
     );
 
     return () => {
-      WebSocketService.sendMessage(JSON.stringify({ type: "leave", participant }), `/app/code/${roomId}`);
+      WebSocketService.sendMessage(
+        JSON.stringify({ type: "leave", participant }),
+        `/app/code/${roomId}`
+      );
       WebSocketService.disconnect();
     };
   }, [roomId, participant]);
@@ -76,7 +67,7 @@ const toggleInvitePopup = () => setShowInvitePopup(!showInvitePopup);
   const handleCodeChange = (newCode) => {
     setCode(newCode);
     codeRef.current = newCode;
-    WebSocketService.sendCodeMessage(newCode); // ⬅️ Broadcast code
+    WebSocketService.sendCodeMessage(newCode);
   };
 
   const handleLanguageChange = (val) => {
@@ -85,38 +76,62 @@ const toggleInvitePopup = () => setShowInvitePopup(!showInvitePopup);
     setLanguage(langMap[val]);
   };
 
-  // Generate an invite link to the current room
-  const inviteLink = `${window.location.origin}/roompage/${roomId}`;
-
-  // Function to generate a random color for each participant's logo
-  const getRandomColor = () => {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+  const getLanguageIcon = () => {
+    const iconStyle = { fontSize: "1.2rem" };
+    return languageId === "71" ? <SiPython style={iconStyle} /> :
+           languageId === "63" ? <SiJavascript style={iconStyle} /> :
+           languageId === "62" ? <FaJava style={iconStyle} /> : // Fixed this line
+           languageId === "54" ? <SiCplusplus style={iconStyle} /> :
+           <SiC style={iconStyle} />;
   };
 
   return (
-    <div className={`editor-container ${darkMode ? "dark" : ""}`}>
-      <div className="header">
-        <div className="header-left">
-          <span className="timer" onClick={() => setActive(!active)}>⏱ {formatTime(timer)}</span>
-          <select value={languageId} onChange={(e) => handleLanguageChange(e.target.value)}>
-            <option value="71">Python</option>
-            <option value="62">Java</option>
-            <option value="63">JavaScript</option>
-            <option value="54">C++</option>
-            <option value="50">C</option>
-          </select>
-           <button className="run-btn" onClick={handleRunCode}>🚀 Run</button>
+    <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`}>
+      {/* Header */}
+      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700 bg-gray-800 dark:bg-gray-900">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {getLanguageIcon()}
+            <select
+              value={languageId}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="bg-gray-700 text-white p-2 rounded-md"
+            >
+              <option value="71">Python</option>
+              <option value="62">Java</option>
+              <option value="63">JavaScript</option>
+              <option value="54">C++</option>
+              <option value="50">C</option>
+            </select>
+          </div>
+          <button
+            onClick={handleRunCode}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md flex items-center gap-2"
+            title="Run Code"
+          >
+            <FaPlay /> Run
+          </button>
         </div>
+{/*         <div className="text-lg font-mono"> */}
+{/*           ⏱ {formatTime(timer)} */}
+{/*         </div> */}
       </div>
-      <div className="main-area">
-        <div className="editor-left">
+
+      {/* Editor and Output */}
+      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
+        {/* Editor Section */}
+        <div className="lg:w-1/2 p-4">
+          <div className="mb-2 flex justify-end gap-2">
+            <button
+              onClick={() => navigator.clipboard.writeText(code)}
+              title="Copy Code"
+              className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md"
+            >
+              <FaCopy />
+            </button>
+          </div>
           <Editor
-            height="80vh"
+            height="calc(100vh - 140px)"
             language={language}
             theme={darkMode ? "vs-dark" : "light"}
             value={code}
@@ -124,16 +139,51 @@ const toggleInvitePopup = () => setShowInvitePopup(!showInvitePopup);
             options={{
               fontSize: 14,
               minimap: { enabled: false },
-              automaticLayout: true,
               autoClosingBrackets: "always",
               autoClosingQuotes: "always",
+              automaticLayout: true
             }}
           />
         </div>
 
-        <div className="editor-right">
-          <h3>📤 Output:</h3>
-          <pre className="output-box">{output}</pre>
+        {/* Input/Output Section */}
+        <div className="lg:w-1/2 p-4 flex flex-col gap-4">
+          {/* Input */}
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-2">📥 Custom Input</h3>
+            <textarea
+              className="w-full h-32 p-3 rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
+              placeholder="Enter custom input here..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+          </div>
+
+          {/* Output */}
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">📤 Output</h3>
+              <div className="flex gap-2">
+                <button
+                  className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md"
+                  onClick={() => setOutput("")}
+                  title="Clear Output"
+                >
+                  <FaTrash />
+                </button>
+                <button
+                  className="bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md"
+                  onClick={() => navigator.clipboard.writeText(output)}
+                  title="Copy Output"
+                >
+                  <FaCopy />
+                </button>
+              </div>
+            </div>
+            <div className="bg-gray-900 text-white rounded-md p-3 h-48 overflow-auto">
+              <pre>{output || "No output yet."}</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>

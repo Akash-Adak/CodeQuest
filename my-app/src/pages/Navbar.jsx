@@ -1,46 +1,35 @@
-// src/components/Navbar.jsx
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaSun, FaMoon, FaUser, FaCog, FaSignOutAlt, FaSearch } from "react-icons/fa";
-import "../styles/Navbar.css";
+import {
+  FaSun,
+  FaMoon,
+  FaUser,
+  FaCog,
+  FaSignOutAlt,
+  FaSearch,
+} from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 
 function Navbar({ token, onLogout }) {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-//   const [darkMode, setDarkMode] = useState(localStorage.getItem("darkMode") === "true");
+  const { darkMode, setDarkMode } = useTheme();
   const [searchFocused, setSearchFocused] = useState(false);
   const dropdownRef = useRef(null);
-//   const [token, setToken] = useState(localStorage.getItem("token"));
 
-  const { darkMode, setDarkMode } = useTheme();
   const handleLogout = () => {
     localStorage.removeItem("token");
     onLogout();
     navigate("/landing");
   };
 
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
+  const toggleDropdown = () => setShowDropdown((prev) => !prev);
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
   };
-
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
-
-
-
-
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [darkMode]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -53,53 +42,95 @@ function Navbar({ token, onLogout }) {
   }, []);
 
   return (
-    <nav className="navbar sticky-navbar">
-      <div className="navbar-logo">
+    <nav className="bg-white dark:bg-gray-800 shadow-md px-4 py-3 flex items-center justify-between relative z-50">
+      {/* Logo */}
+      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
         <Link to="/">CodeQuest</Link>
       </div>
 
-      <div className="menu-icon" onClick={toggleMenu}>
+      {/* Hamburger Icon for Mobile */}
+      <div className="md:hidden text-2xl cursor-pointer" onClick={toggleMenu}>
         ☰
       </div>
 
-      {/* Animated Search Bar */}
-      <div className={`navbar-search ${searchFocused ? "focused" : ""} ${menuOpen ? "active" : ""}`}>
-        <FaSearch className="search-icon" />
+      {/* Search Bar */}
+      <div
+        className={`hidden md:flex items-center bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full transition ${
+          searchFocused ? "ring-2 ring-blue-400" : ""
+        }`}
+      >
+        <FaSearch className="text-gray-500 mr-2" />
         <input
           type="text"
           placeholder="Search companies, jobs..."
+          className="bg-transparent focus:outline-none text-sm text-gray-700 dark:text-white"
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
         />
       </div>
 
-      <div className={`navbar-buttons ${menuOpen ? "active" : ""}`}>
-        {/* Sun/Moon Toggle */}
-      <button onClick={() => setDarkMode((prev) => !prev)}>
-            {darkMode ? "☀️" : "🌙"}
-          </button>
+      {/* Navbar Buttons */}
+      <div
+        className={`absolute md:static top-16 left-0 w-full md:w-auto bg-white dark:bg-gray-900 md:flex items-center gap-4 px-4 py-4 md:py-0 md:px-0 transition-all duration-300 ease-in-out ${
+          menuOpen ? "block" : "hidden"
+        } md:flex-row`}
+      >
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="text-xl hover:text-yellow-500 dark:hover:text-yellow-300 transition"
+          title="Toggle theme"
+        >
+          {darkMode ? <FaSun /> : <FaMoon />}
+        </button>
 
+        {/* Auth Buttons or Profile Dropdown */}
         {token ? (
-          <div className="profile-dropdown" ref={dropdownRef}>
-            <button onClick={toggleDropdown} className="btn btn-profile">
-              <FaUser className="inline-icon" /> Profile ▼
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={toggleDropdown}
+              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              <FaUser /> Profile ▼
             </button>
-            <div className={`dropdown-menu ${showDropdown ? "show" : ""}`}>
-              <Link to="/dashboard" className="dropdown-item">
-                <FaUser className="inline-icon" /> View Profile
-              </Link>
-              <Link to="/profile" className="dropdown-item">
-                <FaCog className="inline-icon" /> Settings
-              </Link>
-              <button onClick={handleLogout} className="dropdown-item logout">
-                <FaSignOutAlt className="inline-icon" /> Logout
-              </button>
-            </div>
+
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-md py-2 z-50">
+                <Link
+                  to="/dashboard"
+                  className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FaUser className="mr-2" /> View Profile
+                </Link>
+                <Link
+                  to="/profile"
+                  className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FaCog className="mr-2" /> Settings
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center w-full px-4 py-2 text-left text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FaSignOutAlt className="mr-2" /> Logout
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>
-            <Link to="/login" className="btn btn-link">Login</Link>
-            <Link to="/auth" className="btn btn-signup">Sign Up</Link>
+            <Link
+              to="/login"
+              className="text-sm font-medium hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              Login
+            </Link>
+            <Link
+              to="/auth"
+              className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 transition text-sm"
+            >
+              Sign Up
+            </Link>
           </>
         )}
       </div>

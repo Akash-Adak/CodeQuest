@@ -24,6 +24,12 @@ import RequireAuth from "./services/RequireAuth";
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const location = useLocation();
+// index.js or App.js
+if (localStorage.getItem("darkMode") === "true") {
+  document.documentElement.classList.add("dark");
+} else {
+  document.documentElement.classList.remove("dark");
+}
 
   // useMatch for dynamic routes
   const roomPageMatch = useMatch("/roompage/:roomId");  // Match the dynamic RoomPage route
@@ -69,7 +75,7 @@ function App() {
         <Route path="/landing" element={<LandingPage onSignInSuccess={handleSignInSuccess} />} />
 
         {/* SignUp Page */}
-        <Route path="/auth" element={<SignUp onSignUpSuccess={handleSignUpSuccess} />} />
+        <Route path="/signup" element={<SignUp onSignUpSuccess={handleSignUpSuccess} />} />
 
         {/* Login Page */}
         <Route path="/login" element={<Login onLoginSuccess={(token) => setToken(token)} />} />

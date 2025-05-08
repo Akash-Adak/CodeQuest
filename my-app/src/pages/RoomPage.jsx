@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import WebSocketService from "../services/WebSocketService";
 import CodeEditor from "../components/CodeEditor";
-import "../styles/RoomPage.css";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import Webcam from "react-webcam";
 
 const RoomPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [roomId, setRoomId] = useState("");
   const [participant, setParticipant] = useState("");
@@ -19,8 +19,13 @@ const RoomPage = () => {
   const [output, setOutput] = useState("");
   const [showInvite, setShowInvite] = useState(false);
   const [participants, setParticipants] = useState([]);
+
   const codeRef = useRef("");
-  const location = useLocation();
+  const webcamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+
   const [username, setUsername] = useState(location?.state?.username || "Admin");
   const roomIdFromState = location?.state?.roomId || "";
 
@@ -41,9 +46,7 @@ const RoomPage = () => {
           setCode(codeMessage);
           codeRef.current = codeMessage;
         },
-        () => {
-          alert("WebSocket connection failed.");
-        }
+        () => alert("WebSocket connection failed.")
       );
 
       WebSocketService.sendMessage(JSON.stringify({ roomId, participant, type: "join" }));
@@ -108,72 +111,119 @@ const RoomPage = () => {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
+  const handleStartRecording = () => {
+    setRecordedChunks([]);
+    setIsRecording(true);
+
+    const stream = webcamRef.current.stream;
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        setRecordedChunks((prev) => prev.concat(event.data));
+      }
+    };
+
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
+  };
+
+  const handleStopRecording = () => {
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+  };
+
+  const handleDownload = () => {
+    if (recordedChunks.length === 0) return;
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "recording.webm";
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="page-container">
+    <div className="min-h-screen bg-white dark:bg-gray-800 p-6">
       {/* Header */}
-      <header className="room-header">
-        <div className="header-left">
-          <button className="invite-btn" onClick={() => setShowInvite(true)}>
+      <header className="flex justify-between items-center mb-4">
+        <div className="flex items-center">
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded-md mr-4 hover:bg-blue-600"
+            onClick={() => setShowInvite(true)}
+          >
             Invite Link
           </button>
-          <div className="participants-list">
+          <div className="space-x-4">
             {participants.map((p, index) => (
-              <div key={index} className="participant-name">{p}</div>
+              <span key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                {p}
+              </span>
             ))}
           </div>
         </div>
-        <div className="header-right">
-          <span className="timer" onClick={handleCircleClick}>
+
+        <div className="flex items-center space-x-6">
+          <span
+            className="cursor-pointer text-lg text-gray-700 dark:text-gray-300"
+            onClick={handleCircleClick}
+          >
             ⏱ {formatTime(timer)}
           </span>
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+            onClick={() => {
+              if (window.confirm("Are you sure you want to end this session?")) {
+                WebSocketService.sendMessage(
+                  JSON.stringify({ roomId, participant, type: "leave" })
+                );
+                WebSocketService.disconnect();
+                navigate("/dashboard");
+              }
+            }}
+          >
+            ❌ End Session
+          </button>
         </div>
-        <button
-          className="end-btn"
-          onClick={() => {
-            if (window.confirm("Are you sure you want to end this session?")) {
-              WebSocketService.sendMessage(
-                JSON.stringify({ roomId, participant, type: "leave" })
-              );
-              WebSocketService.disconnect();
-              navigate("/dashboard"); // Or "/rooms" or wherever you want
-            }
-          }}
-        >
-          ❌ End Session
-        </button>
       </header>
 
       {/* Invite Popup */}
       {showInvite && (
-        <>
-          <div className="invite-overlay" onClick={() => setShowInvite(false)}></div>
-          <div className="invite-popup">
-            <div className="invite-content">
-              <h3>🔗 Invite to Room</h3>
-              <input
-                type="text"
-                value={`http://localhost:5173/roompage/${roomId}`}
-                readOnly
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(`http://localhost:5173/roompage/${roomId}`);
-                  alert("📋 Link copied to clipboard!");
-                }}
-              >
-                📋 Copy Link
-              </button>
-              <button className="close-btn" onClick={() => setShowInvite(false)}>
-                ❌ Close
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              🔗 Invite to Room
+            </h3>
+            <input
+              type="text"
+              value={`http://localhost:5173/roompage/${roomId}`}
+              readOnly
+              className="w-full p-2 mb-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-md"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`http://localhost:5173/roompage/${roomId}`);
+                alert("📋 Link copied to clipboard!");
+              }}
+              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 w-full mb-4"
+            >
+              📋 Copy Link
+            </button>
+            <button
+              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 w-full"
+              onClick={() => setShowInvite(false)}
+            >
+              ❌ Close
+            </button>
           </div>
-        </>
+        </div>
       )}
 
-
       {/* Code Editor */}
-      <div className="editor-container">
+      <div className="mt-6">
         <CodeEditor code={code} onCodeChange={handleCodeChange} language={language} />
       </div>
     </div>
