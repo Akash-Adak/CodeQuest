@@ -181,7 +181,7 @@ const RoomPage = () => {
                   JSON.stringify({ roomId, participant, type: "leave" })
                 );
                 WebSocketService.disconnect();
-                navigate("/dashboard");
+                navigate("/room");
               }
             }}
           >

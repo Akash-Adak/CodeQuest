@@ -3,7 +3,7 @@ import axios from "axios";
 import Editor from "@monaco-editor/react";
 import { useTheme } from "../context/ThemeContext";
 import WebSocketService from "../services/WebSocketService";
-import { FaPlay, FaTrash, FaCopy, FaJava } from "react-icons/fa"; // Added FaJava here
+import { FaPlay, FaTrash, FaCopy, FaJava } from "react-icons/fa";
 import { SiPython, SiJavascript, SiCplusplus, SiC } from "react-icons/si";
 
 const CodeEditor = ({ roomId, participant }) => {
@@ -13,7 +13,6 @@ const CodeEditor = ({ roomId, participant }) => {
   const [language, setLanguage] = useState("python");
   const [output, setOutput] = useState("");
   const [input, setInput] = useState("");
-  const [timer, setTimer] = useState(300);
   const [participants, setParticipants] = useState([]);
   const codeRef = useRef(code);
 
@@ -49,18 +48,16 @@ const CodeEditor = ({ roomId, participant }) => {
     };
   }, [roomId, participant]);
 
-  const formatTime = (sec) => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
-
   const handleRunCode = async () => {
     try {
-      const response = await axios.post("http://localhost:8080/execute", {
+      const response = await axios.post("http://localhost:8080/api/code/run", {
         code,
         languageId,
         input,
       });
-      setOutput(response.data.output);
+      setOutput(response.data.output || response.data.error || "No output.");
     } catch (error) {
-      setOutput(error.response?.data?.error || "Execution failed");
+      setOutput(error.response?.data?.error || "Execution failed.");
     }
   };
 
@@ -80,7 +77,7 @@ const CodeEditor = ({ roomId, participant }) => {
     const iconStyle = { fontSize: "1.2rem" };
     return languageId === "71" ? <SiPython style={iconStyle} /> :
            languageId === "63" ? <SiJavascript style={iconStyle} /> :
-           languageId === "62" ? <FaJava style={iconStyle} /> : // Fixed this line
+           languageId === "62" ? <FaJava style={iconStyle} /> :
            languageId === "54" ? <SiCplusplus style={iconStyle} /> :
            <SiC style={iconStyle} />;
   };
@@ -112,9 +109,6 @@ const CodeEditor = ({ roomId, participant }) => {
             <FaPlay /> Run
           </button>
         </div>
-{/*         <div className="text-lg font-mono"> */}
-{/*           ⏱ {formatTime(timer)} */}
-{/*         </div> */}
       </div>
 
       {/* Editor and Output */}
@@ -141,14 +135,14 @@ const CodeEditor = ({ roomId, participant }) => {
               minimap: { enabled: false },
               autoClosingBrackets: "always",
               autoClosingQuotes: "always",
-              automaticLayout: true
+              automaticLayout: true,
             }}
           />
         </div>
 
         {/* Input/Output Section */}
         <div className="lg:w-1/2 p-4 flex flex-col gap-4">
-          {/* Input */}
+          {/* Custom Input */}
           <div className="flex-1">
             <h3 className="text-lg font-semibold mb-2">📥 Custom Input</h3>
             <textarea

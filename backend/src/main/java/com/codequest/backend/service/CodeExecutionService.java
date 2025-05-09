@@ -15,7 +15,7 @@ public class CodeExecutionService {
         this.webClient = webClientBuilder.baseUrl("https://judge0-ce.p.rapidapi.com").build();
     }
 
-    public Mono<String> executeCode(String code, String languageId) {
+    public Mono<String> executeCode(String code, String languageId, String input) {
         int langId;
 
         try {
@@ -30,7 +30,8 @@ public class CodeExecutionService {
 
         Map<String, Object> requestBody = Map.of(
                 "source_code", code,
-                "language_id", langId
+                "language_id", langId,
+                "stdin", input == null ? "" : input // custom input (e.g., "5\n10")
         );
 
         return webClient.post()
@@ -41,29 +42,17 @@ public class CodeExecutionService {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .map(response -> {
-                    // Debugging: log the full response to inspect
                     System.out.println("API Response: " + response);
 
-                    // Check for stdout (successful execution output)
                     if (response.containsKey("stdout") && response.get("stdout") != null) {
                         return (String) response.get("stdout");
-                    }
-
-                    // Check for compile output (compilation error)
-                    else if (response.containsKey("compile_output") && response.get("compile_output") != null) {
+                    } else if (response.containsKey("compile_output") && response.get("compile_output") != null) {
                         return (String) response.get("compile_output");
-                    }
-
-                    // Check for stderr (runtime error or issues)
-                    else if (response.containsKey("stderr") && response.get("stderr") != null) {
+                    } else if (response.containsKey("stderr") && response.get("stderr") != null) {
                         return (String) response.get("stderr");
-                    }
-
-                    // If no output is found
-                    else {
+                    } else {
                         return "No output or error returned from Judge0 API.";
                     }
                 });
     }
-
 }
