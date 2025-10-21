@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 const SignUp = ({ onSignUpSuccess }) => {
+  const baseUrl=import.meta.env.BACKEND_URL;
+  
   const [step, setStep] = useState("signup");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -29,7 +31,7 @@ const SignUp = ({ onSignUpSuccess }) => {
 
     setLoading(true);
     try {
-      const res = await fetch("https://codequestbackend.onrender.com/public/signup", {
+      const res = await fetch(`${baseUrl}/public/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, email }),
@@ -54,7 +56,7 @@ const SignUp = ({ onSignUpSuccess }) => {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("https://codequestbackend.onrender.com/public/verify", {
+      const res = await fetch("${baseUrl}/public/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -75,7 +77,7 @@ const SignUp = ({ onSignUpSuccess }) => {
   };
 
   // const handleGoogleLogin = () => {
-  //   window.location.href = "https://codequestbackend.onrender.com/auth/google/authorization/google";
+  //   window.location.href = "${baseUrl}/auth/google/authorization/google";
 
   //   const urlParams = new URLSearchParams(window.location.search);
   //   const code = urlParams.get("code");

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Login = ({ onLoginSuccess }) => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,7 +26,7 @@ const Login = ({ onLoginSuccess }) => {
     setError("");
     setLoading(true);
 
-    fetch("https://codequestbackend.onrender.com/public/login", {
+    fetch(`${baseUrl}/public/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: email, password }),
@@ -53,9 +54,9 @@ const Login = ({ onLoginSuccess }) => {
       });
   };
 
-  // const handleGoogleLogin = () => {
-  //   window.location.href = "http://localhost:8080/auth/google/callback";
-  // };
+  const handleGoogleLogin = () => {
+    window.location.href = `${baseUrl}/auth/google/callback`;
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -102,11 +103,10 @@ const Login = ({ onLoginSuccess }) => {
           </Link>
         </div>
 
-{/*         <div className="flex items-center justify-center my-4">
+        <div className="flex items-center justify-center my-4">
           <div className="text-gray-500 dark:text-gray-400">OR</div>
-        </div> */}
-
-{/*         <button
+        </div> 
+     <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600"
         >
@@ -117,7 +117,7 @@ const Login = ({ onLoginSuccess }) => {
           />
           Continue with Google
         </button>
- */}
+
         <div className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
           Don't have an account?{" "}
           <Link
