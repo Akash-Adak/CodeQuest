@@ -49,6 +49,7 @@ const initialCodeTemplates = {
 };
 
 const CodeEditor = ({ roomId, participant }) => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const { darkMode } = useTheme();
   const [code, setCode] = useState(initialCodeTemplates[71]);
   const [languageId, setLanguageId] = useState("71");
@@ -101,7 +102,7 @@ const CodeEditor = ({ roomId, participant }) => {
 
   const handleRunCode = async () => {
     try {
-      const response = await axios.post("https://codequestbackend.onrender.com/api/code/run", {
+      const response = await axios.post(`${baseUrl}/api/code/run`, {
         code,
         languageId,
         input,

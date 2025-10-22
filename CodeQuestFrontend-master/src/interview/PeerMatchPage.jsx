@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 
 const PeerMatchPage = () => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const [name, setName] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [accessCode, setAccessCode] = useState('');
@@ -14,7 +15,7 @@ const PeerMatchPage = () => {
   const handleCreateSession = async () => {
     if (!name) return alert('Please enter your name');
     try {
-      const response = await axios.post('https://codequestbackend.onrender.com/api/interview-rooms/create');
+      const response = await axios.post(`${baseUrl}/api/interview-rooms/create`);
       const room = response.data;
 
       setSessionId(room.roomCode);
@@ -37,7 +38,7 @@ const PeerMatchPage = () => {
       return;
     }
     try {
-      await axios.post('https://codequestbackend.onrender.com/api/interview-rooms/join', null, {
+      await axios.post('${baseUrl}/api/interview-rooms/join', null, {
         params: {
           roomCode: sessionId,
           accessCode: accessCodeInput,

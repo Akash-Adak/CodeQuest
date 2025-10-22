@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { LogIn, PlusCircle, History } from "lucide-react";
 
 const Room = () => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
   const [history, setHistory] = useState([]);
@@ -14,7 +15,7 @@ const Room = () => {
   // Fetch session history from backend
   const fetchHistoryFromBackend = async (name) => {
     try {
-      const res = await axios.get(`https://codequestbackend.onrender.com/api/sessions/${name}`);
+      const res = await axios.get(`${baseUrl}/api/sessions/${name}`);
       setHistory(res.data);
     } catch (err) {
       console.error("Failed to fetch history:", err);
@@ -38,7 +39,7 @@ const Room = () => {
     };
 
     try {
-      await axios.post("https://codequestbackend.onrender.com/api/sessions", newSession);
+      await axios.post("${baseUrl}/api/sessions", newSession);
       fetchHistoryFromBackend(name);
     } catch (error) {
       console.error("Failed to save session:", error);
