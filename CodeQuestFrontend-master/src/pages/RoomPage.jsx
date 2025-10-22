@@ -7,7 +7,7 @@ import Webcam from "react-webcam";
 const RoomPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
+const baseUrl=import.meta.env.BACKEND_URL;
   const [roomId, setRoomId] = useState("");
   const [participant, setParticipant] = useState("");
   const [connected, setConnected] = useState(false);
@@ -87,7 +87,7 @@ const RoomPage = () => {
   };
 
   const handleRunCode = async () => {
-    const response = await fetch("https://codequestbackend.onrender.com/execute", {
+    const response = await fetch(`${baseUrl}/execute`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, language }),

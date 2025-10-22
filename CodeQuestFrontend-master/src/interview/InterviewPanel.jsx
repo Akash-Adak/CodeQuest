@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 
 const InterviewPanel = () => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const navigate = useNavigate();
   const [showWhiteBoard, setShowWhiteBoard] = useState(false);
   const [code, setCode] = useState('// Start coding here...');
@@ -110,7 +111,7 @@ const InterviewPanel = () => {
   }, [chatMessages]);
 
   const connectWebSocket = () => {
-    const socket = new SockJS('https://codequestbackend.onrender.com/ws');
+    const socket = new SockJS(`${baseUrl}/ws`);
     stompClient.current = over(socket);
     stompClient.current.connect(
       {},
@@ -176,7 +177,7 @@ const InterviewPanel = () => {
 
   const fetchParticipants = async () => {
     try {
-      const response = await axios.get(`https://codequestbackend.onrender.com/api/interview-rooms/${firstHalfSessionId}/participants`);
+      const response = await axios.get(`${baseUrl}/api/interview-rooms/${firstHalfSessionId}/participants`);
       if (response.data) {
         setParticipants(response.data);
       }

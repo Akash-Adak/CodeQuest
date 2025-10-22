@@ -23,6 +23,7 @@ const dummyProfile = {
 };
 
 export default function Profile() {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const [profile, setProfile] = useState(dummyProfile);
   const [editing, setEditing] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState("");
@@ -42,7 +43,7 @@ export default function Profile() {
       setPreviewPhoto(parsed.profilePhotoBase64 || "");
     } else {
       axios
-        .get(`https://codequestbackend.onrender.com/api/profile?email=${userEmail}`,{
+        .get(`${baseUrl}/api/profile?email=${userEmail}`,{
             headers: {
                   Authorization: `Bearer ${localStorage.getItem('token')}`, // Assuming you store it as 'token'
                 },
@@ -78,7 +79,7 @@ export default function Profile() {
   const toggleEdit = () => {
     if (editing) {
       axios
-        .post("https://codequestbackend.onrender.com/api/profile", profile,{
+        .post(`${baseUrl}/api/profile`, profile,{
              headers: {
                   Authorization: `Bearer ${localStorage.getItem('token')}`, // Assuming you store it as 'token'
                 },

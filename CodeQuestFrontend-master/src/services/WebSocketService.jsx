@@ -12,14 +12,14 @@ const WebSocketService = {
       console.warn('Already connected.');
       return;
     }
-
+const baseUrl=import.meta.env.BACKEND_URL;
     this.roomId = roomId;
     this.participant = participant;
     this.onMessage = onMessage;
 
 
 
-    const socket = new SockJS('https://codequestbackend.onrender.com/ws');
+    const socket = new SockJS(`${baseUrl}/ws`);
     this.stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,

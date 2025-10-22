@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa";
 
 const WhiteBoard = () => {
+  const baseUrl=import.meta.env.BACKEND_URL;
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const inputRef = useRef(null);
@@ -40,7 +41,7 @@ const WhiteBoard = () => {
     clearCanvas();
 
     const client = new Client({
-      webSocketFactory: () => new SockJS("https://codequestbackend.onrender.com/whiteboard"),
+      webSocketFactory: () => new SockJS(`${baseUrl}/whiteboard`),
       onConnect: () => {
         client.subscribe("/topic/drawing", (message) => {
             console.log("whiteboard connection succesfully");
