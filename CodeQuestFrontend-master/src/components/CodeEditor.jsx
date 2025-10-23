@@ -49,7 +49,7 @@ const initialCodeTemplates = {
 };
 
 const CodeEditor = ({ roomId, participant }) => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const { darkMode } = useTheme();
   const [code, setCode] = useState(initialCodeTemplates[71]);
   const [languageId, setLanguageId] = useState("71");

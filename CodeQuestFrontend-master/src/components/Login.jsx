@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Login = ({ onLoginSuccess }) => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -55,7 +55,7 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${baseUrl}/auth/google/callback`;
+    window.location.href = `${baseUrl}/auth/google /authorization`;
   };
 
   return (

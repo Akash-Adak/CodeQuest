@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 const SignUp = ({ onSignUpSuccess }) => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   
   const [step, setStep] = useState("signup");
   const [username, setUsername] = useState("");
@@ -56,7 +57,7 @@ const SignUp = ({ onSignUpSuccess }) => {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("${baseUrl}/public/verify", {
+      const res = await fetch(`${baseUrl}/public/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -76,25 +77,25 @@ const SignUp = ({ onSignUpSuccess }) => {
     }
   };
 
-  // const handleGoogleLogin = () => {
-  //   window.location.href = "${baseUrl}/auth/google/authorization/google";
+  const handleGoogleLogin = () => {
+    window.location.href = `${baseUrl}/auth/google/authorization/google`;
 
-  //   const urlParams = new URLSearchParams(window.location.search);
-  //   const code = urlParams.get("code");
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
 
-  //   if (code) {
-  //     fetch(`http://localhost:8080/auth/google/callback?code=${code}`, {
-  //       method: "GET",
-  //       credentials: "include",
-  //     })
-  //       .then((res) => {
-  //         if (res.redirected) {
-  //           window.location.href = res.url;
-  //         }
-  //       })
-  //       .catch((err) => console.error(err));
-  //   }
-  // };
+    if (code) {
+      fetch(`${baseUrl}/auth/google/callback?code=${code}`, {
+        method: "GET",
+        credentials: "include",
+      })
+        .then((res) => {
+          if (res.redirected) {
+            window.location.href = res.url;
+          }
+        })
+        .catch((err) => console.error(err));
+    }
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -149,8 +150,7 @@ const SignUp = ({ onSignUpSuccess }) => {
             <div className="flex items-center justify-center my-4">
               <div className="text-gray-500 dark:text-gray-400">OR</div>
             </div>
-
-{/*             <button
+            <button
               onClick={handleGoogleLogin}
               className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600"
             >
@@ -160,7 +160,7 @@ const SignUp = ({ onSignUpSuccess }) => {
                 className="w-5 h-5 mr-2"
               />
               Continue with Google
-            </button> */}
+            </button> 
 
             <div className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
               Already have an account?{" "}

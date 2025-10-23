@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 
 const PeerMatchPage = () => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const [name, setName] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [accessCode, setAccessCode] = useState('');

@@ -12,7 +12,7 @@ const WebSocketService = {
       console.warn('Already connected.');
       return;
     }
-const baseUrl=import.meta.env.BACKEND_URL;
+const baseUrl=import.meta.env.VITE_BACKEND_URL;
     this.roomId = roomId;
     this.participant = participant;
     this.onMessage = onMessage;

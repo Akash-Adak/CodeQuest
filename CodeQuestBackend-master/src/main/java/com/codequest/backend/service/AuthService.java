@@ -1,6 +1,6 @@
 package com.codequest.backend.service;
 
-import com.codequest.backend.util.JwtUtil;
+import com.codequest.backend.config.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
