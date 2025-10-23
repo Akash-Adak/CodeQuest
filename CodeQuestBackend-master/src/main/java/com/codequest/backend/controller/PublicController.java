@@ -5,7 +5,7 @@ import com.codequest.backend.entity.User;
 import com.codequest.backend.entity.UserProfile;
 import com.codequest.backend.repository.UserProfileRepository;
 import com.codequest.backend.repository.UserRepository;
-import com.codequest.backend.util.JwtUtil;
+import com.codequest.backend.config.JwtUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -98,7 +98,8 @@ public class PublicController {
         UserProfile profile = new UserProfile(tempUser.getUsername(), email);
         profileRepository.save(profile);
 
-        String token = jwtUtil.generateToken(tempUser.getUsername());
+        String token = jwtUtil.generateToken(email,"ROLE_USER");
+//        String token = jwtUtil.generateToken(tempUser.getUsername());
 
         // Remove user from pending map
         pendingUsers.remove(email);
@@ -122,8 +123,8 @@ public class PublicController {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
-
-        String token = jwtUtil.generateToken(username);
+        String token = jwtUtil.generateToken(username,"ROLE_USER");
+//        String token = jwtUtil.generateToken(username);
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         return ResponseEntity.ok(response);

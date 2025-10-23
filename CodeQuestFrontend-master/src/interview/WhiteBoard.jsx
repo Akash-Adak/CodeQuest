@@ -14,7 +14,7 @@ import {
 } from "react-icons/fa";
 
 const WhiteBoard = () => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const inputRef = useRef(null);

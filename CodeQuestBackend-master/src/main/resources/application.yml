@@ -1,8 +1,16 @@
 spring:
   data:
     mongodb:
-      uri: ${MONGODB_URI}
+      uri: mongodb+srv://akashadak019:qwWPJMMCWKXckxCc@cluster0.l5iqmkg.mongodb.net/dynamic_db?retryWrites=true&w=majority&appName=Cluster0
+
       database: codequestdb
+    redis:
+      host: redis-19166.c276.us-east-1-2.ec2.redns.redis-cloud.com
+      port: 19166
+      username: default
+      password: 5tB8hj58dSpJSkZo92ehRsW1K90xUhbL
+      timeout: 60000
+
 
   security:
     oauth2:
@@ -12,14 +20,13 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
-              - profile
               - email
-        provider:
-          google:
-            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
-            token-uri: https://oauth2.googleapis.com/token
-            user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
-            user-name-attribute: sub
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
 
   servlet:
     multipart:
@@ -29,8 +36,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: codequest.coding@gmail.com
+    password: mwkrhfpipbcraiki
     protocol: smtp
     properties:
       mail:
@@ -48,15 +55,20 @@ server:
 judge0:
   api:
     base-url: https://judge0-ce.p.rapidapi.com
-    key: ${JUDGE0_API_KEY}
+    key: b8b5834c78mshcae26a3d5fc1161p103cc7jsn326ed2638a48
     host: judge0-ce.p.rapidapi.com
 
 app:
   frontend:
-    redirect-uri: ${FRONTEND_URL}
+    redirect-uri: http://localhost:5173
 
 cors:
-  allowed-origins: ${FRONTEND_URL}
+  allowed-origins: http://localhost:5173
   allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
   allowed-headers: "*"
   allow-credentials: true
+
+
+jwt:
+  secret: IooOhqlz++kDnyhBOXazulK1SlfzUE1M23TnbO0d+sk=
+  expiration: ${JWT_EXPIRATION:86400000}

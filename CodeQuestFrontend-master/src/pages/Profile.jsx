@@ -23,7 +23,7 @@ const dummyProfile = {
 };
 
 export default function Profile() {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const [profile, setProfile] = useState(dummyProfile);
   const [editing, setEditing] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState("");

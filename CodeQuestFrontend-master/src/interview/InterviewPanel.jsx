@@ -22,7 +22,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 
 const InterviewPanel = () => {
-  const baseUrl=import.meta.env.BACKEND_URL;
+  const baseUrl=import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
   const [showWhiteBoard, setShowWhiteBoard] = useState(false);
   const [code, setCode] = useState('// Start coding here...');
