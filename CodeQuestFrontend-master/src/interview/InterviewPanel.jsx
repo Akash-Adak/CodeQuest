@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Webcam from 'react-webcam';
 import SockJS from 'sockjs-client';
 import { over } from 'stompjs';
 import {
@@ -24,21 +23,44 @@ import {
   FaShare,
   FaLock,
   FaCrown,
+  FaComment,
+  FaEllipsisV,
+  FaClosedCaptioning,
+  FaUserPlus,
+  FaShieldAlt,
+  FaRecordVinyl,
+  FaStop,
+  FaCopy,
+  FaPhone,
+  FaPhoneSlash,
+  FaRegWindowRestore,
+  FaRegCopy,
+  FaUser,
+  FaUserTie,
+  FaEye,
+  FaTimes,
+  FaChevronDown,
+  FaChevronUp,
+  FaGripHorizontal,
 } from 'react-icons/fa';
 import CodeEditor from '../components/CodeEditor';
-import WhiteBoard from '../interview/WhiteBoard';
-import { useLocation, useNavigate } from 'react-router-dom';
+import WhiteBoard from './WhiteBoard';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useVideoCall } from '../hooks/useVideoCall';
+import VideoCall from '../components/VideoCall';
 
 const InterviewPanel = () => {
   const baseUrl = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
-  const [showWhiteBoard, setShowWhiteBoard] = useState(false);
-  const [code, setCode] = useState('// Start coding here...');
+  const { sessionId: urlSessionId } = useParams();
+  
+  // State management
+  const [code, setCode] = useState('// Start coding here...\nfunction solution(input) {\n  // Your code here\n  return input;\n}');
   const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(true);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -47,68 +69,110 @@ const InterviewPanel = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('editor');
+  const [isRecording, setIsRecording] = useState(false);
+  const [layout, setLayout] = useState('split'); // 'split', 'editor', 'whiteboard', 'video'
 
   const [joinedSession, setJoinedSession] = useState(false);
   const [sessionId, setSessionId] = useState('');
-  const [interviewerName, setInterviewerName] = useState('');
+  const [interviewerName, setInterviewerName] = useState('Interviewer');
+  const [userRole, setUserRole] = useState('interviewer');
 
-  const [videoEnabled1, setVideoEnabled1] = useState(true);
-  const [audioEnabled1, setAudioEnabled1] = useState(true);
-
-  const webcamRef1 = useRef(null);
+  // Refs
   const stompClient = useRef(null);
   const chatBoxRef = useRef(null);
   const mainContainerRef = useRef(null);
+
   const location = useLocation();
-  const sessionIdFromState = location?.state?.sessionId || '';
-  let firstHalfSessionId = '';
-  let secondHalfSessionId = '';
-  
-  if (sessionIdFromState.length === 14) {
-    firstHalfSessionId = sessionIdFromState.substring(0, 8);
-    secondHalfSessionId = sessionIdFromState.substring(8); 
-  } else {
-    console.log("session id length is:" + sessionIdFromState.length);
-  }
+  const sessionIdFromState = location?.state?.sessionId || urlSessionId;
 
-  // Check system preference for dark mode
-  useEffect(() => {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
-  }, []);
+  // Video call hook
+  const videoCall = useVideoCall(sessionId, stompClient.current, {
+    id: 'local-user',
+    name: interviewerName,
+    role: userRole
+  });
 
+  // WebRTC message handling
   useEffect(() => {
-    if (sessionIdFromState) {
-      setSessionId(sessionIdFromState);
-      setJoinedSession(true);
+    if (stompClient.current?.connected) {
+      const subscription = stompClient.current.subscribe(`/topic/webrtc/${sessionId}`, (message) => {
+        const data = JSON.parse(message.body);
+        
+        switch (data.type) {
+          case 'OFFER':
+            videoCall.handleOffer(data.offer, data.from);
+            break;
+          case 'ANSWER':
+            videoCall.handleAnswer(data.answer, data.from);
+            break;
+          case 'ICE_CANDIDATE':
+            videoCall.handleIceCandidate(data.candidate, data.from);
+            break;
+        }
+      });
+      
+      return () => subscription.unsubscribe();
     }
+  }, [stompClient.current, sessionId]);
+
+  // Initialize session
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (sessionIdFromState) {
+        setSessionId(sessionIdFromState);
+        
+        try {
+          const response = await axios.get(`${baseUrl}/api/sessions/${sessionIdFromState}`);
+          const sessionData = response.data;
+          
+          setParticipants(sessionData.participants || []);
+          setChatMessages(sessionData.chatHistory || []);
+          setUploadedFiles(sessionData.files || []);
+          
+          setJoinedSession(true);
+          
+          const localUser = {
+            id: 'local-user',
+            name: localStorage.getItem('name') || 'Interviewer',
+            role: sessionData.userRole || 'interviewer',
+            isYou: true,
+            videoEnabled: true,
+            audioEnabled: true,
+            connection: 'connected'
+          };
+          
+          setUserRole(sessionData.userRole);
+          setInterviewerName(localUser.name);
+          setParticipants(prev => [localUser, ...prev.filter(p => p.id !== 'local-user')]);
+          
+          toast.success('Session joined successfully!', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+          
+        } catch (error) {
+          console.error('Failed to fetch session details:', error);
+          toast.error('Failed to load session', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+        }
+      }
+    };
+
+    initializeSession();
   }, [sessionIdFromState]);
 
-  useEffect(() => {
-    const storedName = localStorage.getItem('name');
-    if (storedName) {
-      setInterviewerName(storedName);
-    }
-  }, []);
-
-  useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).catch(() => {
-      toast.error('Please allow camera and microphone access');
-    });
-  }, []);
-
-  useEffect(() => {
-    const webcam = webcamRef1.current;
-    if (webcam && webcam.video && webcam.video.srcObject) {
-      const stream = webcam.video.srcObject;
-      const videoTrack = stream.getVideoTracks()[0];
-      const audioTrack = stream.getAudioTracks()[0];
-
-      if (videoTrack) videoTrack.enabled = videoEnabled1;
-      if (audioTrack) audioTrack.enabled = audioEnabled1;
-    }
-  }, [videoEnabled1, audioEnabled1]);
-
+  // Timer effect
   useEffect(() => {
     let interval;
     if (isRunning) {
@@ -117,20 +181,30 @@ const InterviewPanel = () => {
     return () => clearInterval(interval);
   }, [isRunning]);
 
+  // WebSocket connection
   useEffect(() => {
     if (joinedSession && sessionId) {
       connectWebSocket();
-      fetchUploadedFiles();
-      fetchParticipants();
     }
     return () => disconnectWebSocket();
   }, [joinedSession, sessionId]);
 
+  // Chat auto-scroll
   useEffect(() => {
     if (chatBoxRef.current) {
       chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  // Fullscreen handling
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const connectWebSocket = () => {
     const socket = new SockJS(`${baseUrl}/ws`);
@@ -140,19 +214,76 @@ const InterviewPanel = () => {
       () => {
         stompClient.current.subscribe(`/topic/code/${sessionId}`, (message) => {
           if (message.body) {
-            const msg = JSON.parse(message.body);
-            setChatMessages((prev) => [...prev, msg]);
+            const codeUpdate = JSON.parse(message.body);
+            setCode(codeUpdate.content);
           }
+        });
+        
+        stompClient.current.subscribe(`/topic/chat/${sessionId}`, (message) => {
+          if (message.body) {
+            const msg = JSON.parse(message.body);
+            setChatMessages(prev => [...prev, msg]);
+          }
+        });
+        
+        stompClient.current.subscribe(`/topic/participants/${sessionId}`, (message) => {
+          if (message.body) {
+            const participantUpdate = JSON.parse(message.body);
+            setParticipants(prev => 
+              prev.map(p => 
+                p.id === participantUpdate.id ? { ...p, ...participantUpdate } : p
+              )
+            );
+          }
+        });
+
+        stompClient.current.subscribe(`/topic/whiteboard/${sessionId}`, (message) => {
+          // Handle whiteboard updates
+        });
+
+        const joinMessage = {
+          type: 'USER_JOINED',
+          user: {
+            id: 'local-user',
+            name: interviewerName,
+            role: userRole,
+          },
+          timestamp: new Date().toISOString()
+        };
+        stompClient.current.send(`/app/participants/${sessionId}`, {}, JSON.stringify(joinMessage));
+        
+        toast.info('Connected to session', {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
         });
       },
       (err) => {
         console.error('WebSocket connection error:', err);
+        toast.error('Connection error - attempting to reconnect...', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       }
     );
   };
 
   const disconnectWebSocket = () => {
     if (stompClient.current?.connected) {
+      const leaveMessage = {
+        type: 'USER_LEFT',
+        user: { id: 'local-user' },
+        timestamp: new Date().toISOString()
+      };
+      stompClient.current.send(`/app/participants/${sessionId}`, {}, JSON.stringify(leaveMessage));
+      
       stompClient.current.disconnect(() => {
         console.log('Disconnected WebSocket');
       });
@@ -162,11 +293,12 @@ const InterviewPanel = () => {
   const sendMessage = () => {
     if (chatInput.trim() && stompClient.current?.connected && sessionId) {
       const message = {
-        from: interviewerName || 'User',
+        from: interviewerName,
         content: chatInput.trim(),
         timestamp: new Date().toLocaleTimeString(),
+        type: 'CHAT_MESSAGE'
       };
-      stompClient.current.send(`/app/code/${sessionId}`, {}, JSON.stringify(message));
+      stompClient.current.send(`/app/chat/${sessionId}`, {}, JSON.stringify(message));
       setChatInput('');
     }
   };
@@ -174,43 +306,64 @@ const InterviewPanel = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('sessionId', sessionId);
 
     try {
-      const res = await fetch('/api/files/upload', {
-        method: 'POST',
-        body: formData,
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('sessionId', sessionId);
+
+      const response = await axios.post(`${baseUrl}/api/files/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
-      if (res.ok) {
-        fetchUploadedFiles();
-        toast.success('File uploaded successfully!');
-      }
-    } catch (err) {
-      console.error('Upload failed:', err);
-      toast.error('File upload failed');
-    }
-  };
 
-  const fetchUploadedFiles = async () => {
-    try {
-      const res = await fetch(`/api/files/list?sessionId=${sessionId}`);
-      if (res.ok) setUploadedFiles(await res.json());
-    } catch (err) {
-      console.error('Error fetching files:', err);
-    }
-  };
-
-  const fetchParticipants = async () => {
-    try {
-      const response = await axios.get(`${baseUrl}/api/interview-rooms/${firstHalfSessionId}/participants`);
-      if (response.data) {
-        setParticipants(response.data);
-      }
+      setUploadedFiles(prev => [...prev, response.data.file]);
+      toast.success(`${file.name} uploaded successfully!`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } catch (error) {
-      console.error('Error fetching participants:', error);
-      toast.error('Failed to fetch participants.');
+      console.error('File upload error:', error);
+      toast.error('Failed to upload file', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
+
+  const downloadFile = async (fileId, fileName) => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/files/download/${fileId}`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -220,427 +373,651 @@ const InterviewPanel = () => {
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const endSession = () => {
-    if (window.confirm('Are you sure you want to end the session?')) {
-      disconnectWebSocket();
-      toast.info('Session ended', {
-        position: 'top-right',
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      });
-      navigate('/InterviewTypes');
+  const endSession = async () => {
+    if (window.confirm('Are you sure you want to end the session for all participants?')) {
+      try {
+        if (userRole === 'interviewer') {
+          await axios.post(`${baseUrl}/api/sessions/${sessionId}/end`);
+        }
+        disconnectWebSocket();
+        toast.info('Session ended', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        navigate('/interview');
+      } catch (error) {
+        console.error('Error ending session:', error);
+        toast.error('Failed to end session', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
     }
   };
 
-  const toggleParticipantsList = () => {
-    setIsParticipantsOpen(!isParticipantsOpen);
-  };
-
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
-      mainContainerRef.current?.requestFullscreen?.();
-      setIsFullscreen(true);
+      await mainContainerRef.current?.requestFullscreen?.();
     } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
+      await document.exitFullscreen?.();
     }
   };
 
   const handleCopyLink = () => {
-    const joinURL = `${window.location.origin}/peer-match`;
-    const copyText = `Join the Interview:\nLink: ${joinURL}\nRoom ID: ${firstHalfSessionId}\nAccess Code: ${secondHalfSessionId}`;
-
-    navigator.clipboard.writeText(copyText)
+    const joinURL = `${window.location.origin}/join/${sessionId}`;
+    navigator.clipboard.writeText(joinURL)
       .then(() => {
-        toast.success('Meeting details copied to clipboard!');
+        toast.success('Meeting link copied to clipboard!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       })
       .catch((err) => {
         console.error('Failed to copy link:', err);
-        toast.error('Failed to copy link. Please copy manually.');
+        toast.error('Failed to copy link', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       });
   };
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
+    toast.info(`${!darkMode ? 'Dark' : 'Light'} mode activated`, {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
+  const toggleRecording = async () => {
+    if (!isRecording) {
+      try {
+        await axios.post(`${baseUrl}/api/sessions/${sessionId}/recording/start`);
+        setIsRecording(true);
+        toast.info('Recording started', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } catch (error) {
+        toast.error('Failed to start recording', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    } else {
+      try {
+        await axios.post(`${baseUrl}/api/sessions/${sessionId}/recording/stop`);
+        setIsRecording(false);
+        toast.info('Recording stopped', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } catch (error) {
+        toast.error('Failed to stop recording', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    }
+  };
+
+  const handleVideoToggle = () => {
+    videoCall.toggleVideo();
+    toast.info(`Camera ${videoCall.videoEnabled ? 'enabled' : 'disabled'}`, {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
+  const handleAudioToggle = () => {
+    videoCall.toggleAudio();
+    toast.info(`Microphone ${videoCall.audioEnabled ? 'enabled' : 'disabled'}`, {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
+  const toggleScreenShare = () => {
+    videoCall.toggleScreenShare();
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'interviewer': return 'text-blue-400';
+      case 'candidate': return 'text-green-400';
+      case 'observer': return 'text-purple-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'interviewer': return <FaUserTie className="w-3 h-3" />;
+      case 'candidate': return <FaUser className="w-3 h-3" />;
+      case 'observer': return <FaEye className="w-3 h-3" />;
+      default: return <FaUser className="w-3 h-3" />;
+    }
+  };
+
+  // Render different layouts based on current layout state
+  const renderMainContent = () => {
+    switch (layout) {
+      case 'split':
+        return (
+          <div className="flex h-full gap-4">
+            {/* Collaboration Area */}
+            <div className="flex-1 flex flex-col">
+              <div className={`rounded-xl overflow-hidden flex-1 ${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } shadow-2xl border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+                <div className="h-full">
+                  {activeTab === 'editor' && (
+                    <CodeEditor 
+                      code={code} 
+                      onChange={(newCode) => {
+                        setCode(newCode);
+                        if (stompClient.current?.connected) {
+                          stompClient.current.send(
+                            `/app/code/${sessionId}`, 
+                            {}, 
+                            JSON.stringify({ content: newCode, type: 'CODE_UPDATE' })
+                          );
+                        }
+                      }}
+                      darkMode={darkMode}
+                      height="100%"
+                    />
+                  )}
+                  
+                  {activeTab === 'whiteboard' && (
+                    <WhiteBoard 
+                      darkMode={darkMode}
+                      sessionId={sessionId}
+                      stompClient={stompClient.current}
+                    />
+                  )}
+                  
+                  {activeTab === 'files' && (
+                    <div className="p-6 h-full overflow-y-auto">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-semibold text-lg">Shared Files</h3>
+                        <label className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                          darkMode 
+                            ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                            : "bg-blue-500 hover:bg-blue-600 text-white"
+                        }`}>
+                          <FaFileAlt className="inline w-4 h-4 mr-2" />
+                          Upload File
+                          <input
+                            type="file"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.txt,.zip,.jpg,.png"
+                          />
+                        </label>
+                      </div>
+                      
+                      {uploadedFiles.length === 0 ? (
+                        <div className="text-center py-12">
+                          <FaFileAlt className={`w-16 h-16 mx-auto mb-4 ${
+                            darkMode ? "text-gray-600" : "text-gray-400"
+                          }`} />
+                          <p className={`text-lg mb-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                            No files shared yet
+                          </p>
+                          <p className={darkMode ? "text-gray-500" : "text-gray-500"}>
+                            Upload a file to get started
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3">
+                          {uploadedFiles.map((file, index) => (
+                            <motion.div
+                              key={file.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className={`flex items-center justify-between p-4 rounded-lg ${
+                                darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"
+                              } transition-colors`}
+                            >
+                              <div className="flex items-center space-x-4 min-w-0 flex-1">
+                                <FaFileAlt className={`w-6 h-6 flex-shrink-0 ${
+                                  darkMode ? "text-blue-400" : "text-blue-500"
+                                }`} />
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium truncate">{file.originalFileName}</div>
+                                  <div className={`text-sm ${
+                                    darkMode ? "text-gray-400" : "text-gray-600"
+                                  }`}>
+                                    {file.fileSize && `${(file.fileSize / 1024 / 1024).toFixed(2)} MB`}
+                                    {file.uploadedAt && ` • ${new Date(file.uploadedAt).toLocaleDateString()}`}
+                                  </div>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => downloadFile(file.id, file.originalFileName)}
+                                className={`p-3 rounded-lg transition-colors ${
+                                  darkMode 
+                                    ? "bg-gray-600 hover:bg-gray-500 text-gray-300" 
+                                    : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                                } flex-shrink-0 ml-4`}
+                              >
+                                <FaDownload className="w-4 h-4" />
+                              </button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Collaboration Tabs */}
+              <div className={`mt-4 rounded-xl overflow-hidden ${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } shadow-lg border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+                <div className={`flex border-b ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
+                }`}>
+                  {['editor', 'whiteboard', 'files'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                        activeTab === tab
+                          ? darkMode
+                            ? "bg-blue-600 text-white"
+                            : "bg-blue-500 text-white"
+                          : darkMode
+                          ? "text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                      }`}
+                    >
+                      {tab === 'editor' && <FaCode className="inline w-4 h-4 mr-2" />}
+                      {tab === 'whiteboard' && <FaChalkboardTeacher className="inline w-4 h-4 mr-2" />}
+                      {tab === 'files' && <FaFileAlt className="inline w-4 h-4 mr-2" />}
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Video Area - USING REAL VIDEO CALL COMPONENT */}
+            <div className="w-1/3 flex flex-col">
+              <VideoCall
+                participants={participants}
+                localStream={videoCall.localStream}
+                remoteStreams={videoCall.remoteStreams}
+                videoEnabled={videoCall.videoEnabled}
+                audioEnabled={videoCall.audioEnabled}
+                screenShare={videoCall.screenShare}
+                localVideoRef={videoCall.localVideoRef}
+                getRoleIcon={getRoleIcon}
+                getRoleColor={getRoleColor}
+                darkMode={darkMode}
+              />
+            </div>
+          </div>
+        );
+
+      case 'editor':
+        return (
+          <div className="h-full">
+            <div className={`rounded-xl overflow-hidden h-full ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } shadow-2xl border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+              <CodeEditor 
+                code={code} 
+                onChange={(newCode) => {
+                  setCode(newCode);
+                  if (stompClient.current?.connected) {
+                    stompClient.current.send(
+                      `/app/code/${sessionId}`, 
+                      {}, 
+                      JSON.stringify({ content: newCode, type: 'CODE_UPDATE' })
+                    );
+                  }
+                }}
+                darkMode={darkMode}
+                height="100%"
+              />
+            </div>
+          </div>
+        );
+
+      case 'whiteboard':
+        return (
+          <div className="h-full">
+            <div className={`rounded-xl overflow-hidden h-full ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            } shadow-2xl border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+              <WhiteBoard 
+                darkMode={darkMode}
+                sessionId={sessionId}
+                stompClient={stompClient.current}
+              />
+            </div>
+          </div>
+        );
+
+      case 'video':
+        return (
+          <div className="h-full">
+            <VideoCall
+              participants={participants}
+              localStream={videoCall.localStream}
+              remoteStreams={videoCall.remoteStreams}
+              videoEnabled={videoCall.videoEnabled}
+              audioEnabled={videoCall.audioEnabled}
+              screenShare={videoCall.screenShare}
+              localVideoRef={videoCall.localVideoRef}
+              getRoleIcon={getRoleIcon}
+              getRoleColor={getRoleColor}
+              darkMode={darkMode}
+              fullScreen={true}
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
     <div 
       ref={mainContainerRef}
-      className={`min-h-screen transition-all duration-500 ${
+      className={`h-screen transition-all duration-500 overflow-hidden ${
         darkMode 
-          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100" 
-          : "bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-gray-800"
+          ? "bg-gray-900 text-gray-100" 
+          : "bg-gray-100 text-gray-800"
       }`}
     >
-      {/* Enhanced Header */}
+      {/* Main Header */}
       <motion.header 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className={`p-4 flex items-center justify-between backdrop-blur-lg border-b ${
+        className={`h-16 flex items-center justify-between px-6 border-b ${
           darkMode 
-            ? "bg-gray-900/80 border-gray-700" 
-            : "bg-white/80 border-purple-100"
-        }`}
+            ? "bg-gray-800 border-gray-700" 
+            : "bg-white border-gray-200"
+        } shadow-lg`}
       >
         <div className="flex items-center space-x-6">
           {/* Session Info */}
-          <div className={`px-4 py-2 rounded-2xl border ${
-            darkMode 
-              ? "border-purple-500/30 bg-purple-500/10" 
-              : "border-purple-200 bg-purple-50"
-          }`}>
-            <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
-              Room: {firstHalfSessionId}
-            </span>
+          <div className="flex items-center space-x-4">
+            <div className={`px-3 py-1 rounded-lg ${
+              darkMode ? "bg-blue-600" : "bg-blue-500"
+            } text-white text-sm font-medium flex items-center space-x-2 shadow-md`}>
+              <FaClock className="w-3 h-3" />
+              <span>{formatTime(seconds)}</span>
+            </div>
+            <div className="text-sm">
+              <div className="font-semibold">Interview Session</div>
+              <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                {sessionId}
+              </div>
+            </div>
           </div>
 
-          {/* Participants Button */}
-          <div className="relative">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleParticipantsList}
-              className={`flex items-center space-x-3 px-4 py-2 rounded-2xl transition-all duration-300 ${
-                darkMode 
-                  ? "bg-gray-800 hover:bg-gray-700 text-purple-400" 
-                  : "bg-white hover:bg-purple-50 text-purple-600"
-              } shadow-lg`}
+          {/* Recording Indicator */}
+          {isRecording && (
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="flex items-center space-x-2 px-3 py-1 bg-red-500 rounded-lg shadow-md"
             >
-              <FaUsers className="h-5 w-5" />
-              <span className="font-bold">{participants.length}</span>
-              <span className="text-sm font-medium">Participants</span>
-            </motion.button>
-            
-            <AnimatePresence>
-              {isParticipantsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className={`absolute top-full left-0 mt-2 rounded-2xl shadow-2xl overflow-hidden z-50 min-w-64 ${
-                    darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-purple-100"
-                  }`}
-                >
-                  <div className={`p-4 border-b ${
-                    darkMode ? "border-gray-700" : "border-purple-100"
-                  }`}>
-                    <h5 className="font-bold text-lg flex items-center gap-2">
-                      <FaUsers className="text-purple-500" />
-                      Participants ({participants.length})
-                    </h5>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto p-2">
-                    {participants.map((participant, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex items-center space-x-3 p-3 rounded-xl hover:bg-purple-500/10 transition-colors"
-                      >
-                        <div className="relative">
-                          <FaUserCircle className="h-8 w-8 text-purple-500" />
-                          {index === 0 && (
-                            <FaLock className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{participant || 'Guest'}</p>
-                          <p className={`text-sm ${
-                            darkMode ? "text-gray-400" : "text-gray-600"
-                          }`}>
-                            {index === 0 ? "Interviewer" : "Candidate"}
-                          </p>
-                        </div>
-                        {index === 0 && <FaCrown className="text-yellow-500" />}
-                      </motion.div>
-                    ))}
-                    {participants.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        No participants yet
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Timer */}
-          <motion.div 
-            className={`flex items-center space-x-4 px-4 py-2 rounded-2xl ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } shadow-lg`}
-            whileHover={{ scale: 1.02 }}
-          >
-            <FaClock className={`text-lg ${darkMode ? "text-purple-400" : "text-purple-600"}`} />
-            <span className={`text-xl font-mono font-bold ${
-              darkMode ? "text-white" : "text-gray-800"
-            }`}>
-              {formatTime(seconds)}
-            </span>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsRunning(!isRunning)}
-              className={`p-2 rounded-full transition-colors ${
-                darkMode 
-                  ? "hover:bg-gray-700 text-purple-400" 
-                  : "hover:bg-purple-100 text-purple-600"
-              }`}
-            >
-              {isRunning ? (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              )}
-            </motion.button>
-          </motion.div>
-
-          {/* Copy Link */}
-          {sessionId && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleCopyLink}
-              className="flex items-center space-x-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-purple-500/30"
-            >
-              <FaShare className="h-4 w-4" />
-              <span className="font-semibold">Share Session</span>
-            </motion.button>
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span className="text-white text-sm font-medium">REC</span>
+            </motion.div>
           )}
         </div>
 
-        {/* Control Buttons */}
-        <div className="flex items-center space-x-3">
-          {/* Theme Toggle */}
+        {/* Layout Controls */}
+        <div className="flex items-center space-x-2">
           <motion.button
-            whileHover={{ scale: 1.1, rotate: 180 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleTheme}
-            className={`p-3 rounded-2xl transition-colors ${
-              darkMode 
-                ? "bg-gray-800 hover:bg-gray-700 text-purple-400" 
-                : "bg-white hover:bg-purple-100 text-purple-600"
-            } shadow-lg`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setLayout('split')}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              layout === 'split' 
+                ? (darkMode ? "bg-blue-600 text-white shadow-lg" : "bg-blue-500 text-white shadow-lg")
+                : (darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-600 hover:bg-gray-300")
+            } text-xs font-medium flex items-center space-x-2 px-3`}
           >
-            <FaPalette className="h-5 w-5" />
+            <FaGripHorizontal className="w-3 h-3" />
+            <span>Split</span>
           </motion.button>
-
-          {/* Fullscreen Toggle */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setLayout('editor')}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              layout === 'editor' 
+                ? (darkMode ? "bg-blue-600 text-white shadow-lg" : "bg-blue-500 text-white shadow-lg")
+                : (darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-600 hover:bg-gray-300")
+            } text-xs font-medium flex items-center space-x-2 px-3`}
+          >
+            <FaCode className="w-3 h-3" />
+            <span>Code</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setLayout('whiteboard')}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              layout === 'whiteboard' 
+                ? (darkMode ? "bg-blue-600 text-white shadow-lg" : "bg-blue-500 text-white shadow-lg")
+                : (darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-600 hover:bg-gray-300")
+            } text-xs font-medium flex items-center space-x-2 px-3`}
+          >
+            <FaChalkboardTeacher className="w-3 h-3" />
+            <span>Whiteboard</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setLayout('video')}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              layout === 'video' 
+                ? (darkMode ? "bg-blue-600 text-white shadow-lg" : "bg-blue-500 text-white shadow-lg")
+                : (darkMode ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-600 hover:bg-gray-300")
+            } text-xs font-medium flex items-center space-x-2 px-3`}
+          >
+            <FaVideo className="w-3 h-3" />
+            <span>Video</span>
+          </motion.button>
+        </div>
+
+        {/* Right Controls */}
+        <div className="flex items-center space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={toggleFullscreen}
-            className={`p-3 rounded-2xl transition-colors ${
-              darkMode 
-                ? "bg-gray-800 hover:bg-gray-700 text-purple-400" 
-                : "bg-white hover:bg-purple-100 text-purple-600"
-            } shadow-lg`}
+            className={`p-3 rounded-full transition-colors ${
+              darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"
+            } shadow-md`}
           >
-            {isFullscreen ? <FaCompress className="h-5 w-5" /> : <FaExpand className="h-5 w-5" />}
+            {isFullscreen ? <FaCompress className="w-5 h-5" /> : <FaExpand className="w-5 h-5" />}
           </motion.button>
 
-          {/* Settings */}
           <motion.button
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowSettings(!showSettings)}
-            className={`p-3 rounded-2xl transition-colors ${
-              darkMode 
-                ? "bg-gray-800 hover:bg-gray-700 text-purple-400" 
-                : "bg-white hover:bg-purple-100 text-purple-600"
-            } shadow-lg`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleCopyLink}
+            className={`p-3 rounded-full transition-colors ${
+              darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"
+            } shadow-md`}
           >
-            <FaCog className="h-5 w-5" />
+            <FaCopy className="w-5 h-5" />
           </motion.button>
 
-          {/* End Session Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={endSession}
-            className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-6 py-3 rounded-2xl transition-all duration-300 flex items-center space-x-3 shadow-lg hover:shadow-red-500/30"
+            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg"
           >
-            <FaSignOutAlt className="h-4 w-4" />
-            <span className="font-semibold">End Session</span>
+            <FaPhoneSlash className="w-5 h-5" />
           </motion.button>
         </div>
       </motion.header>
 
-      {/* Main Content */}
-      <div className="flex-grow flex flex-col lg:flex-row p-6 gap-6">
-        {/* Left Panel - Editor/Whiteboard */}
-        <motion.div 
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className={`flex-1 flex flex-col rounded-3xl shadow-2xl overflow-hidden ${
-            darkMode ? "bg-gray-800/50" : "bg-white/80"
-          } backdrop-blur-sm border ${
-            darkMode ? "border-gray-700" : "border-purple-100"
-          }`}
-        >
-          {/* Panel Header */}
-          <div className={`p-6 border-b ${
-            darkMode ? "border-gray-700" : "border-purple-100"
-          }`}>
-            <div className="flex justify-between items-center">
-              <motion.h2 
-                className="text-2xl font-bold flex items-center gap-3"
-                whileHover={{ scale: 1.02 }}
-              >
-                {showWhiteBoard ? (
-                  <>
-                    <FaChalkboardTeacher className="text-purple-500" />
-                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      Interactive Whiteboard
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <FaCode className="text-purple-500" />
-                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      Collaborative Code Editor
-                    </span>
-                  </>
-                )}
-              </motion.h2>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowWhiteBoard(!showWhiteBoard)}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-purple-500/30"
-              >
-                {showWhiteBoard ? (
-                  <>
-                    <FaCode />
-                    Switch to Code
-                  </>
-                ) : (
-                  <>
-                    <FaChalkboardTeacher />
-                    Switch to Whiteboard
-                  </>
-                )}
-              </motion.button>
-            </div>
-          </div>
+      {/* Main Content Area */}
+      <div className="h-[calc(100vh-4rem)] p-4">
+        {renderMainContent()}
+      </div>
 
-          {/* Editor/Whiteboard Content */}
-          <div className="flex-grow relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={showWhiteBoard ? 'whiteboard' : 'editor'}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0"
-              >
-                {showWhiteBoard ? (
-                  <WhiteBoard darkMode={darkMode} />
-                ) : (
-                  <CodeEditor code={code} onChange={setCode} darkMode={darkMode} />
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </motion.div>
-
-        {/* Right Panel */}
-        <motion.div 
-          initial={{ x: 50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="w-full lg:w-96 flex flex-col gap-6"
-        >
-          {/* Webcam */}
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className={`rounded-3xl shadow-2xl overflow-hidden ${
-              darkMode ? "bg-gray-800/50" : "bg-white/80"
-            } backdrop-blur-sm border ${
-              darkMode ? "border-gray-700" : "border-purple-100"
-            }`}
-          >
-            <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600">
-              <h4 className="text-white font-semibold text-center">Your Camera</h4>
-            </div>
-            <div className="p-4">
-              <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-gray-900">
-                <Webcam
-                  ref={webcamRef1}
-                  audio={audioEnabled1}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setVideoEnabled1((prev) => !prev)}
-                    className={`p-3 rounded-2xl backdrop-blur-sm ${
-                      videoEnabled1 
-                        ? "bg-green-500 text-white" 
-                        : "bg-red-500 text-white"
-                    } shadow-lg`}
-                  >
-                    {videoEnabled1 ? <FaVideo className="h-5 w-5" /> : <FaVideoSlash className="h-5 w-5" />}
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setAudioEnabled1((prev) => !prev)}
-                    className={`p-3 rounded-2xl backdrop-blur-sm ${
-                      audioEnabled1 
-                        ? "bg-green-500 text-white" 
-                        : "bg-red-500 text-white"
-                    } shadow-lg`}
-                  >
-                    {audioEnabled1 ? (
-                      <FaMicrophone className="h-5 w-5" />
-                    ) : (
-                      <FaMicrophoneSlash className="h-5 w-5" />
-                    )}
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Chat */}
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className={`flex-1 flex flex-col rounded-3xl shadow-2xl overflow-hidden ${
-              darkMode ? "bg-gray-800/50" : "bg-white/80"
-            } backdrop-blur-sm border ${
-              darkMode ? "border-gray-700" : "border-purple-100"
-            }`}
-          >
-            <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600">
-              <h4 className="text-white font-semibold flex items-center gap-2">
-                <FaUsers />
-                Live Chat
-              </h4>
-            </div>
-            
-            <div 
-              ref={chatBoxRef}
-              className={`flex-1 overflow-y-auto p-4 space-y-3 ${
-                darkMode ? "bg-gray-900/50" : "bg-gray-50"
+      {/* Sidebar */}
+      <motion.div 
+        className={`fixed right-0 top-0 bottom-0 z-50 flex flex-col border-l transition-all duration-300 ${
+          darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        }`}
+        initial={false}
+        animate={{ width: isParticipantsOpen ? 320 : 0 }}
+      >
+        {/* Participants Panel */}
+        <div className={`flex-1 border-b ${
+          darkMode ? "border-gray-700" : "border-gray-200"
+        }`}>
+          <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h3 className="font-semibold flex items-center">
+              <FaUsers className="w-4 h-4 mr-2" />
+              People ({participants.length})
+            </h3>
+            <button
+              onClick={() => setIsParticipantsOpen(false)}
+              className={`p-2 rounded ${
+                darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
               }`}
             >
-              {chatMessages.map((msg, i) => (
+              <FaTimes className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="p-3 max-h-48 overflow-y-auto">
+            {participants.map((participant, index) => (
+              <motion.div
+                key={participant.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`flex items-center justify-between p-3 rounded-lg mb-2 ${
+                  darkMode ? "bg-gray-700/50 hover:bg-gray-700" : "bg-gray-100 hover:bg-gray-200"
+                } transition-colors`}
+              >
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      participant.role === 'interviewer' ? 'bg-blue-500' :
+                      participant.role === 'candidate' ? 'bg-green-500' : 'bg-gray-500'
+                    }`}>
+                      <FaUser className="w-4 h-4 text-white" />
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 w-2 h-2 rounded-full border ${
+                      darkMode ? "border-gray-800" : "border-white"
+                    } ${
+                      participant.audioEnabled ? "bg-green-500" : "bg-red-500"
+                    }`}></div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">
+                      {participant.name} {participant.isYou && '(You)'}
+                    </div>
+                    <div className={`text-xs flex items-center space-x-1 ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>
+                      {getRoleIcon(participant.role)}
+                      <span>{participant.role}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className={`w-2 h-2 rounded-full ${
+                  participant.connection === 'connected' ? 'bg-green-500' : 
+                  participant.connection === 'poor' ? 'bg-yellow-500' : 'bg-red-500'
+                }`}></div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Chat Panel */}
+        <div className="flex-1 flex flex-col">
+          <div className={`p-4 border-b ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}>
+            <h3 className="font-semibold flex items-center">
+              <FaComment className="w-4 h-4 mr-2" />
+              Chat
+            </h3>
+          </div>
+          
+          <div 
+            ref={chatBoxRef}
+            className={`flex-1 overflow-y-auto p-4 space-y-3 ${
+              darkMode ? "bg-gray-900/50" : "bg-gray-50"
+            }`}
+          >
+            {chatMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <FaComment className={`w-12 h-12 mx-auto mb-3 ${
+                  darkMode ? "text-gray-600" : "text-gray-400"
+                }`} />
+                <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                  No messages yet
+                </p>
+              </div>
+            ) : (
+              chatMessages.map((msg, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
@@ -649,181 +1026,163 @@ const InterviewPanel = () => {
                     msg.from === interviewerName ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  <div className={`max-w-xs lg:max-w-md rounded-2xl p-3 ${
+                  <div className={`max-w-xs rounded-lg p-3 ${
                     msg.from === interviewerName
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none'
+                      ? 'bg-blue-500 text-white rounded-br-none'
                       : darkMode
                       ? 'bg-gray-700 text-white rounded-bl-none'
                       : 'bg-white text-gray-800 rounded-bl-none shadow'
                   }`}>
                     <div className="font-semibold text-sm mb-1">{msg.from}</div>
-                    <div className="text-sm">{msg.content}</div>
+                    <div className="text-sm break-words">{msg.content}</div>
                     <div className={`text-xs mt-1 ${
-                      msg.from === interviewerName ? 'text-purple-200' : 'text-gray-500'
+                      msg.from === interviewerName ? 'text-blue-200' : 'text-gray-500'
                     }`}>
                       {msg.timestamp}
                     </div>
                   </div>
                 </motion.div>
-              ))}
+              ))
+            )}
+          </div>
+          
+          <div className={`p-4 border-t ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}>
+            <div className="flex space-x-2">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                className={`flex-1 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                  darkMode 
+                    ? "bg-gray-700 text-white placeholder-gray-400 border-gray-600" 
+                    : "bg-white text-gray-800 placeholder-gray-500 border-gray-300 border"
+                }`}
+                placeholder="Type a message..."
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={sendMessage}
+                disabled={!chatInput.trim()}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  chatInput.trim()
+                    ? darkMode 
+                      ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                    : darkMode
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Send
+              </motion.button>
             </div>
-            
-            <div className="p-4 border-t bg-gradient-to-r from-purple-600 to-pink-600">
-              <div className="flex gap-2">
-                <input
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  className={`flex-1 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    darkMode 
-                      ? "bg-gray-800 text-white placeholder-gray-400" 
-                      : "bg-white text-gray-800 placeholder-gray-500"
-                  }`}
-                  placeholder="Type your message..."
-                />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={sendMessage}
-                  className="px-6 py-3 bg-white text-purple-600 rounded-2xl font-semibold hover:bg-gray-100 transition-colors shadow-lg"
-                >
-                  Send
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
+          </div>
+        </div>
+      </motion.div>
 
-          {/* Files */}
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className={`rounded-3xl shadow-2xl overflow-hidden ${
-              darkMode ? "bg-gray-800/50" : "bg-white/80"
-            } backdrop-blur-sm border ${
-              darkMode ? "border-gray-700" : "border-purple-100"
+      {/* Bottom Control Bar */}
+      <motion.div 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 p-4 rounded-2xl shadow-2xl ${
+          darkMode 
+            ? "bg-gray-800/90 border border-gray-700" 
+            : "bg-white/90 border border-gray-200"
+        } backdrop-blur-lg`}
+      >
+        {/* Media Controls */}
+        <div className="flex items-center space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleVideoToggle}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              videoCall.videoEnabled 
+                ? (darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700")
+                : "bg-red-500 hover:bg-red-600 text-white shadow-lg"
             }`}
           >
-            <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600">
-              <h4 className="text-white font-semibold flex items-center gap-2">
-                <FaFileAlt />
-                Shared Files
-              </h4>
-            </div>
-            
-            <div className="p-4">
-              <motion.input
-                whileHover={{ scale: 1.02 }}
-                type="file"
-                onChange={handleFileUpload}
-                className="w-full mb-4 text-sm file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-purple-600 file:to-pink-600 file:text-white hover:file:from-purple-700 hover:file:to-pink-700 transition-all duration-300"
-              />
-              
-              <div className="max-h-32 overflow-y-auto space-y-2">
-                {uploadedFiles.map((file, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className={`flex items-center justify-between p-3 rounded-2xl ${
-                      darkMode ? "bg-gray-700/50" : "bg-purple-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <FaFileAlt className={`h-4 w-4 flex-shrink-0 ${
-                        darkMode ? "text-purple-400" : "text-purple-600"
-                      }`} />
-                      <span className="text-sm font-medium truncate">
-                        {file.originalFileName}
-                      </span>
-                    </div>
-                    <motion.a
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      href={`/api/files/download/${file.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`p-2 rounded-xl ${
-                        darkMode 
-                          ? "bg-gray-600 hover:bg-gray-500 text-purple-400" 
-                          : "bg-purple-100 hover:bg-purple-200 text-purple-600"
-                      } transition-colors`}
-                    >
-                      <FaDownload className="h-3 w-3" />
-                    </motion.a>
-                  </motion.div>
-                ))}
-                {uploadedFiles.length === 0 && (
-                  <div className={`text-center py-4 rounded-2xl ${
-                    darkMode ? "text-gray-500 bg-gray-700/30" : "text-gray-500 bg-purple-50"
-                  }`}>
-                    No files shared yet
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </div>
+            {videoCall.videoEnabled ? <FaVideo className="w-5 h-5" /> : <FaVideoSlash className="w-5 h-5" />}
+          </motion.button>
 
-      {/* Settings Panel */}
-      <AnimatePresence>
-        {showSettings && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowSettings(false)}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleAudioToggle}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              videoCall.audioEnabled 
+                ? (darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700")
+                : "bg-red-500 hover:bg-red-600 text-white shadow-lg"
+            }`}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className={`rounded-3xl p-6 w-full max-w-md ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } shadow-2xl`}
-            >
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <FaCog className="text-purple-500" />
-                Session Settings
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Video Quality</label>
-                  <select className={`w-full p-3 rounded-2xl border ${
-                    darkMode 
-                      ? "bg-gray-700 border-gray-600 text-white" 
-                      : "bg-white border-purple-200 text-gray-800"
-                  }`}>
-                    <option>Auto</option>
-                    <option>720p</option>
-                    <option>1080p</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Audio Input</label>
-                  <select className={`w-full p-3 rounded-2xl border ${
-                    darkMode 
-                      ? "bg-gray-700 border-gray-600 text-white" 
-                      : "bg-white border-purple-200 text-gray-800"
-                  }`}>
-                    <option>Default Microphone</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Enable Notifications</span>
-                  <button className={`w-12 h-6 rounded-full ${
-                    darkMode ? "bg-purple-600" : "bg-purple-500"
-                  }`}>
-                    <div className="w-4 h-4 bg-white rounded-full ml-1"></div>
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {videoCall.audioEnabled ? <FaMicrophone className="w-5 h-5" /> : <FaMicrophoneSlash className="w-5 h-5" />}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleScreenShare}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              videoCall.screenShare 
+                ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
+                : (darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700")
+            }`}
+          >
+            <FaRegWindowRestore className="w-5 h-5" />
+          </motion.button>
+        </div>
+
+        {/* Center Controls */}
+        <div className="flex items-center space-x-2 border-l border-r border-gray-600 px-4">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleRecording}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              isRecording 
+                ? "bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                : (darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700")
+            }`}
+          >
+            {isRecording ? <FaStop className="w-5 h-5" /> : <FaRecordVinyl className="w-5 h-5" />}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+            }`}
+          >
+            <FaUsers className="w-5 h-5" />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleTheme}
+            className={`p-4 rounded-full transition-all duration-200 ${
+              darkMode ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+            }`}
+          >
+            <FaPalette className="w-5 h-5" />
+          </motion.button>
+        </div>
+
+        {/* End Call */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={endSession}
+          className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg"
+        >
+          <FaPhoneSlash className="w-5 h-5" />
+        </motion.button>
+      </motion.div>
     </div>
   );
 };

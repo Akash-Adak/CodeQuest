@@ -21,6 +21,7 @@ import AdminProblemList from "./pages/AdminProblemList";
 import ProblemEditor from "./pages/ProblemEditor";
 import PeerMatchPage from "./interview/PeerMatchPage";
 import { AuthProvider } from './context/AuthContext';
+import WhiteBoard from "./interview/WhiteBoard";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -53,7 +54,12 @@ function App() {
     return children;
   };
 
+
+
+
   return (
+
+     
     <AuthProvider>
       <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white transition-colors">
         {showNavbar && <Navbar token={token} onLogout={handleLogout} />}
@@ -83,6 +89,7 @@ function App() {
           <Route path="/InterviewTypes" element={<InterviewTypes />} />
           <Route path="/InterviewPanel/:sessionId" element={  <RequireAuth><InterviewPanel />   </RequireAuth>} />
           <Route path="/CodeEditor" element={<CodeEditor />} />
+        
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin/add-problem" element={<AdminAddProblem />} />
           <Route path="/editor" element={<ProblemEditor />} />
@@ -92,6 +99,11 @@ function App() {
           <Route path="/dashboard" element={<Dashboard onSignInSuccess={handleSignInSuccess} />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
+
+{/* 
+          <Route path="/whiteboard/:roomId" element={<WhiteBoardRoom />} />
+          <Route path="/whiteboard" element={<Navigate to="/whiteboard/default" replace />} /> */}
+
         </Routes>
         {showFooter && <Footer />}
         <Toaster position="top-center" reverseOrder={false} />

@@ -55,7 +55,7 @@ const Login = ({ onLoginSuccess }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${baseUrl}/auth/google /authorization`;
+    window.location.href = `${baseUrl}/auth/google/authorization`;
   };
 
   return (
