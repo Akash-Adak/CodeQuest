@@ -46,7 +46,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                        .successHandler(oAuth2SuccessHandler)
+                        .successHandler(oAuth2SuccessHandler) // This should redirect to your React app
                 )
                 .logout(logout -> logout.logoutSuccessUrl("http://localhost:5173").permitAll());
 
