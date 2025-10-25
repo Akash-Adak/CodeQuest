@@ -57,7 +57,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             if (existingSession != null) {
                 String token = (String) existingSession.get("token");
                 addJwtCookie(response, token);
-                redirectToFrontend(response, "");
+                redirectToFrontend(response, "",token);
                 return;
             }
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         addJwtCookie(response, token);
 
         // Redirect to frontend
-        String queryParams = "?login=success&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8)
+        String queryParams = "&login=success&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8)
                 + "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
 //        RegisterRequestResponse event = new RegisterRequestResponse();
 //        event.setUsername(user.getName());
@@ -110,8 +110,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 //        String json = new Gson().toJson(event);
 //
 //        userKafkaProducerService.sendUserRegistered("Users", json);
+        System.out.println("token:  "+token);
 
-        redirectToFrontend(response, queryParams);
+        redirectToFrontend(response, queryParams, token);
+
     }
 
     private void addJwtCookie(HttpServletResponse response, String token) {
@@ -122,17 +124,22 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
 
         // Set domain only for production
-        if (!frontendApi.contains("localhost")) {
-            cookie.setDomain("reqnest.com");
-        }
+//        if (!frontendApi.contains("localhost")) {
+//            cookie.setDomain("reqnest.com");
+//        }
 
         response.addCookie(cookie);
     }
 
-    private void redirectToFrontend(HttpServletResponse response, String queryParams) throws IOException {
-        String redirectUrl = frontendApi+ "/oauth2/callback" + queryParams;
+    private void redirectToFrontend(HttpServletResponse response, String queryParams, String token) throws IOException {
+        String redirectUrl = frontendApi + "/oauth2/callback"
+                + "?token=" + URLEncoder.encode(token, StandardCharsets.UTF_8)
+                + queryParams;
+
+        System.out.println("rredirct url::::"+redirectUrl);
         response.sendRedirect(redirectUrl);
     }
+
 
 
 

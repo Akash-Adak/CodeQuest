@@ -1,7 +1,8 @@
 package com.codequest.backend.enums;
 
 public enum Role {
-    ADMIN,
-    INTERVIEWER,
-    CANDIDATE
+    ROLE_ADMIN,
+    ROLE_INTERVIEWER,
+    ROLE_CANDIDATE,
+    ROLE_USER
 }

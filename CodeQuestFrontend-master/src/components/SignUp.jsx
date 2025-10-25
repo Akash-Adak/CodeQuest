@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 const SignUp = ({ onSignUpSuccess }) => {
+  const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8080";
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const baseUrl=import.meta.env.VITE_BACKEND_URL;
-  
   const [step, setStep] = useState("signup");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -13,19 +14,18 @@ const SignUp = ({ onSignUpSuccess }) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-
-  // Regex to check password strength
+  // Password validation regex
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
+  // --- Handle Sign Up ---
   const handleSignUp = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!passwordRegex.test(password)) {
       setError(
-        "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+        "Password must include uppercase, lowercase, number, and special character (min 8 chars)."
       );
       return;
     }
@@ -44,14 +44,16 @@ const SignUp = ({ onSignUpSuccess }) => {
         localStorage.setItem("name", username);
       } else {
         const text = await res.text();
-        setError(text || "Sign up failed in backend");
+        setError(text || "Sign-up failed. Please try again.");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setLoading(false);
-      setError("Sign up failed in frontend");
+      setError("Network error during sign-up.");
     }
   };
 
+  // --- Handle Email Verification ---
   const handleVerify = async (e) => {
     e.preventDefault();
     setError("");
@@ -66,44 +68,31 @@ const SignUp = ({ onSignUpSuccess }) => {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem("token", data.token);
-        navigate("/Login");
+        navigate("/login");
       } else {
         const text = await res.text();
-        setError(text || "Verification failed");
+        setError(text || "Invalid verification code.");
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setLoading(false);
-      setError("Verification failed");
+      setError("Verification failed. Please try again.");
     }
   };
 
+  // --- Google OAuth login ---
   const handleGoogleLogin = () => {
-    window.location.href = `${baseUrl}/auth/google/authorization/google`;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-
-    if (code) {
-      fetch(`${baseUrl}/auth/google/callback?code=${code}`, {
-        method: "GET",
-        credentials: "include",
-      })
-        .then((res) => {
-          if (res.redirected) {
-            window.location.href = res.url;
-          }
-        })
-        .catch((err) => console.error(err));
-    }
+    window.location.href = `${baseUrl}/oauth2/authorization/google`;
+    
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-90 backdrop-blur-lg">
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-all duration-300">
         {step === "signup" && (
           <>
-            <h2 className="text-3xl font-semibold text-center text-gray-700 dark:text-white mb-6">
-              Create your account
+            <h2 className="text-3xl font-semibold text-center text-gray-800 dark:text-white mb-6">
+              Create Your Account
             </h2>
 
             {error && (
@@ -114,45 +103,50 @@ const SignUp = ({ onSignUpSuccess }) => {
               <input
                 type="text"
                 placeholder="Username"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <input
                 type="password"
                 placeholder="Password"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
-              <small className="text-xs text-gray-500 dark:text-gray-400">
+              <small className="text-xs text-gray-500 dark:text-gray-400 block">
                 Minimum 8 characters with uppercase, lowercase, number & special character
               </small>
               <input
                 type="email"
                 placeholder="Email"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <button
                 type="submit"
-                className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 disabled={loading}
+                className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-all"
               >
-               {loading ? "Creating your account..." : "Sign Up"}
+                {loading ? "Creating Account..." : "Sign Up"}
               </button>
             </form>
 
+            {/* Divider */}
             <div className="flex items-center justify-center my-4">
-              <div className="text-gray-500 dark:text-gray-400">OR</div>
+              <div className="h-px bg-gray-300 dark:bg-gray-600 w-1/3"></div>
+              <span className="px-3 text-gray-500 text-sm dark:text-gray-400">OR</span>
+              <div className="h-px bg-gray-300 dark:bg-gray-600 w-1/3"></div>
             </div>
+
+            {/* Google Sign-in Button */}
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600"
+              className="w-full flex items-center justify-center py-2 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:hover:bg-gray-600 transition-all"
             >
               <img
                 src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
@@ -160,7 +154,7 @@ const SignUp = ({ onSignUpSuccess }) => {
                 className="w-5 h-5 mr-2"
               />
               Continue with Google
-            </button> 
+            </button>
 
             <div className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
               Already have an account?{" "}
@@ -176,7 +170,7 @@ const SignUp = ({ onSignUpSuccess }) => {
 
         {step === "verify" && (
           <>
-            <h2 className="text-3xl font-semibold text-center text-gray-700 dark:text-white mb-6">
+            <h2 className="text-3xl font-semibold text-center text-gray-800 dark:text-white mb-6">
               Verify Your Email
             </h2>
 
@@ -188,31 +182,30 @@ const SignUp = ({ onSignUpSuccess }) => {
               <input
                 type="email"
                 placeholder="Email"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 disabled
+                className="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <input
                 type="text"
                 placeholder="Verification Code"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
+                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <button
                 type="submit"
-                className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
                 disabled={loading}
+                className="w-full py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-all"
               >
                 {loading ? "Verifying..." : "Verify"}
               </button>
             </form>
 
             <div className="text-center text-sm text-gray-500 mt-4 dark:text-gray-400">
-              Didn't receive the code?{" "}
+              Didn’t receive the code?{" "}
               <button
                 onClick={handleSignUp}
                 className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-500 underline"
