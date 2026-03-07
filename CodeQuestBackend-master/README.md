@@ -49,18 +49,7 @@
 
 ## 📁 Project Structure
 
-```
-src
-├── config          // Security & CORS Config
-├── controller      // REST & WebSocket Controllers
-├── dto             // Request/Response DTOs
-├── model           // JPA & MongoDB Models
-├── repository      // JPA + MongoDB Repositories
-├── service         // Business Logic Layer
-└── util            // Utility Classes
-```
 
----
 
 ## 🔐 Authentication
 
