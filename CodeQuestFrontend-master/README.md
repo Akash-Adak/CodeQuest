@@ -45,6 +45,7 @@
 | Socket.IO       | WebSocket Real-time Sync      |
 | CodeMirror      | Code Editor                   |
 | React Router    | Routing                      |
+| designer   | designer                      |
 
 ---
 
